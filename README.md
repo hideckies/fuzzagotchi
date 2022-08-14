@@ -1,3 +1,5 @@
+![logo](https://raw.githubusercontent.com/hideckies/fuzzagotchi/main/img/logo.png?token=GHSAT0AAAAAABWMAINRLCHXU6PTWUWLPGV6YXZFOXQ)
+
 # Fuzzagotchi
 
 A fuzzing tool.
