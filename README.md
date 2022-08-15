@@ -2,7 +2,9 @@
 
 # Fuzzagotchi
 
-A fuzzing tool.
+A fuzzing tool written in Go.
+
+<br />
 
 ## Prerequisites
 
@@ -14,8 +16,18 @@ A fuzzing tool.
     sudo apt install seclists
     ```
 
+<br />
+
 ## Usage
 
 ```sh
 fuzzagotchi -w wordlist.txt -u https://fuzzagotchi.xxx/
+```
+
+<br />
+
+## Compile
+
+```sh
+go build
 ```

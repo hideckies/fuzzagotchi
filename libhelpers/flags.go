@@ -1,4 +1,4 @@
-package flags
+package libhelpers
 
 import (
 	"flag"

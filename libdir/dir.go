@@ -1,7 +1,8 @@
-package fuzz
+package libdir
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 
 	"github.com/fatih/color"
@@ -21,7 +22,8 @@ func Fuzz(url string, verbose bool, wordlist string) {
 	for fileScanner.Scan() {
 		word = fileScanner.Text()
 
-		_ = word
+		fmt.Println(word)
+		break
 	}
 
 	readFile.Close()
