@@ -1,4 +1,4 @@
-![logo](https://raw.githubusercontent.com/hideckies/fuzzagotchi/main/img/logo.png?token=GHSAT0AAAAAABWMAINRLCHXU6PTWUWLPGV6YXZFOXQ)
+![logo](img/logo.png)
 
 # Fuzzagotchi
 
