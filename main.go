@@ -10,15 +10,13 @@ import (
 )
 
 func main() {
-	url, verbose, wordlist := libhelpers.Flag(os.Args)
+	flags := libhelpers.NewFlags(os.Args)
 
-	// Display ascii art
 	color.HiCyan("%s\n\n", libhelpers.LOGO)
-
-	color.HiCyan("Target URL: %s\n", url)
-	color.HiCyan("Wordlist: %s\n", wordlist)
+	color.HiCyan("Target URL: %s\n", flags.Url)
+	color.HiCyan("Wordlist: %s\n", flags.Wordlist)
+	color.HiCyan("Verbose: %t\n", flags.Verbose)
 	color.HiCyan("%s\n\n", libhelpers.BAR_DOUBLE_M)
 
-	// Start fuzzing
-	libdir.Fuzz(url, verbose, wordlist)
+	libdir.Fuzz(flags)
 }
