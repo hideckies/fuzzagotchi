@@ -3,6 +3,7 @@ package libdir
 import (
 	"bufio"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -12,7 +13,6 @@ import (
 
 func Fuzz(flags libhelpers.Flags) {
 	readFile, err := os.Open(flags.Wordlist)
-
 	if err != nil {
 		color.HiRed("%v\nPlease install seclists by running 'sudo apt install seclists'.\n", err)
 		os.Exit(0)
@@ -20,38 +20,44 @@ func Fuzz(flags libhelpers.Flags) {
 	fileScanner := bufio.NewScanner(readFile)
 	fileScanner.Split(bufio.ScanLines)
 
+	// Initialize a configuration for request
+	reqConf := libgotchi.NewReqConf()
+	reqConfPtr := &reqConf
+
+	// Time delay
+	duration := libgotchi.NewDuration(flags)
+
 	var word string
 	for fileScanner.Scan() {
-		// Time delay
-		duration := libgotchi.NewDuration(flags)
 		time.Sleep(duration)
 
 		word = fileScanner.Text()
 
+		// ******************************************************************
 		// Request
-		// Create a configuration for request
-		reqConf := libgotchi.NewReqConf()
-		reqConfPtr := &reqConf
 		// Update the request configuration
-		reqConfPtr.Url = libgotchi.AdjustUrlSuffix(flags.Url) + word
+		reqConfPtr.Url = strings.Replace(flags.Url, "EGG", word, -1)
 		// Send request
 		res := libgotchi.SendRequest(reqConfPtr)
+		// ******************************************************************
 
 		// Display result
 		switch res.StatusCode {
-		case 200, 302:
-			color.HiGreen("%s: %s", word, res.Status)
+		case 200:
+			color.HiGreen("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
+		case 301, 302:
+			color.HiGreen("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
 		case 400, 401, 402, 403, 404, 405:
 			if flags.Verbose {
-				color.Red("%s: %s", word, res.Status)
+				color.Red("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
 			}
 		case 500:
 			if flags.Verbose {
-				color.Red("%s: %s", word, res.Status)
+				color.Red("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
 			}
 		default:
 			if flags.Verbose {
-				color.White("%s: %s", word, res.Status)
+				color.White("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
 			}
 		}
 	}
