@@ -6,14 +6,16 @@ import (
 )
 
 type Response struct {
-	Body       string
-	Headers    map[string]string
-	Status     string
-	StatusCode int
+	Body          string
+	ContentLength int
+	Headers       map[string]string
+	Status        string
+	StatusCode    int
 }
 
 func NewResponse(resp *http.Response) Response {
 	var response Response
+	response.ContentLength = int(resp.ContentLength)
 	response.Headers = make(map[string]string)
 	response.Status = resp.Status
 	response.StatusCode = resp.StatusCode
