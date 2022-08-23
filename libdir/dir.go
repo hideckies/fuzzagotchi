@@ -2,6 +2,7 @@ package libdir
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -9,8 +10,10 @@ import (
 	"github.com/fatih/color"
 	"github.com/hideckies/fuzzagotchi/libgotchi"
 	"github.com/hideckies/fuzzagotchi/libhelpers"
+	"github.com/hideckies/fuzzagotchi/libutils"
 )
 
+// Fuzz fuzzes on the content discovery.
 func Fuzz(flags libhelpers.Flags) {
 	readFile, err := os.Open(flags.Wordlist)
 	if err != nil {
@@ -41,24 +44,15 @@ func Fuzz(flags libhelpers.Flags) {
 		res := libgotchi.SendRequest(reqConfPtr)
 		// ******************************************************************
 
-		// Display result
-		switch res.StatusCode {
-		case 200:
-			color.HiGreen("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
-		case 301, 302:
-			color.HiGreen("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
-		case 400, 401, 402, 403, 404, 405:
-			if flags.Verbose {
-				color.Red("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
-			}
-		case 500:
-			if flags.Verbose {
-				color.Red("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
-			}
-		default:
-			if flags.Verbose {
-				color.White("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
-			}
+		// Display results
+		resultSuccess := color.HiGreenString("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
+		resultFailed := color.RedString("%-30s\t\tStatus Code: %d, Content Length: %d", word, res.StatusCode, res.ContentLength)
+		if flags.ContentLength > 0 && flags.ContentLength == res.ContentLength {
+			fmt.Println(resultSuccess)
+		} else if flags.ContentLength == -1 && libutils.IntContains(flags.StatusCodes, res.StatusCode) {
+			fmt.Println(resultSuccess)
+		} else if flags.Verbose {
+			fmt.Println(resultFailed)
 		}
 	}
 
