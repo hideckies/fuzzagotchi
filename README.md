@@ -3,7 +3,12 @@
 # Fuzzagotchi
 
 A fuzzing tool written in Go. It helps to discover directories, files, parameters, etc. in web applications.  
-**This is underdevelopment.**
+
+<br />
+
+## Status
+
+**This is under development. So only some features work for now.**
 
 <br />
 
