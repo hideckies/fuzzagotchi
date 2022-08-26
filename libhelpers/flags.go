@@ -1,10 +1,13 @@
 package libhelpers
 
 type Flags struct {
-	ContentLength int
+	Color         bool
+	ContentLength string
+	Cookie        string
 	Header        string
+	Method        string
 	PostData      string
-	StatusCodes   []int
+	Status        []int
 	Threads       int8
 	TimeDelay     string
 	Url           string
@@ -14,10 +17,13 @@ type Flags struct {
 
 func NewFlags() Flags {
 	var flags Flags
-	flags.ContentLength = -1
+	flags.Color = true
+	flags.ContentLength = "-1"
+	flags.Cookie = ""
 	flags.Header = ""
+	flags.Method = ""
 	flags.PostData = ""
-	flags.StatusCodes = []int{}
+	flags.Status = []int{}
 	flags.Threads = 0
 	flags.TimeDelay = ""
 	flags.Url = ""

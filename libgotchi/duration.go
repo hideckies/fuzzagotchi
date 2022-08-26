@@ -1,7 +1,10 @@
 package libgotchi
 
 import (
+	"fmt"
 	"math/rand"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -11,15 +14,36 @@ import (
 
 func NewDuration(flags libhelpers.Flags) time.Duration {
 	var duration time.Duration
-	if strings.Contains(flags.TimeDelay, "-") {
+
+	r, _ := regexp.Compile("[+]?([0-9]*[.])?[0-9]+")
+	rrange, _ := regexp.Compile("([+]?([0-9]*[.])?[0-9]+)-([+]?([0-9]*[.])?[0-9]+)")
+
+	if rrange.MatchString(flags.TimeDelay) {
 		durations := strings.Split(flags.TimeDelay, "-")
-		dmin, _ := strconv.Atoi(durations[0])
-		dmax, _ := strconv.Atoi(durations[1])
-		duration = time.Duration(rand.Intn(dmax-dmin)) * time.Millisecond
+		dmin, _ := strconv.ParseFloat(durations[0], 64)
+		dmax, _ := strconv.ParseFloat(durations[1], 64)
+		if dmin > dmax {
+			fmt.Println(ERROR_DURATION)
+			os.Exit(0)
+		} else if dmin == dmax {
+			s := fmt.Sprintf("%fs", dmin)
+			duration, _ = time.ParseDuration(s)
+		} else if dmin < dmax {
+			drand := dmin + rand.Float64()*(dmax-dmin)
+			s := fmt.Sprintf("%fs", drand)
+			duration, _ = time.ParseDuration(s)
+		} else {
+			fmt.Println(ERROR_DURATION)
+			os.Exit(0)
+		}
+	} else if r.MatchString(flags.TimeDelay) {
+		s := fmt.Sprintf("%vs", flags.TimeDelay)
+		duration, _ = time.ParseDuration(s)
 	} else {
-		d, _ := strconv.Atoi(flags.TimeDelay)
-		duration = time.Duration(d) * time.Millisecond
+		fmt.Println(ERROR_DURATION)
+		os.Exit(0)
 	}
+
 	return duration
 }
 
