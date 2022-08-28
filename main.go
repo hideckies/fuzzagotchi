@@ -27,7 +27,7 @@ var cmd = &cobra.Command{
 	fuzzagotchi -u https://example.com/EGG.php -w wordlist.txt
 	fuzzagotchi -u https://example.com/?q=EGG -w wordlist.txt
 
-[Subdomain Scan] *Under development so unavailable currently.
+  [Subdomain Scan] *Under development so unavailable currently.
 	fuzzagotchi -u https://example.com -w subdomains.txt -H "Host: EGG.example.com" --content-length 500-2000
 
   [Brute Force Credentials] *Unser development so unavailable currently.
