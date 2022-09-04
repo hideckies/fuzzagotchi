@@ -30,7 +30,7 @@ var cmd = &cobra.Command{
   [Subdomain Scan] *Under development so unavailable currently.
 	fuzzagotchi -u https://example.com -w subdomains.txt -H "Host: EGG.example.com" --content-length 500-2000
 
-  [Brute Force Credentials] *Unser development so unavailable currently.
+  [Brute Force Credentials] *Under development so unavailable currently.
 	fuzzagotchi -M POST -u https://example.com/login -w passwords.txt --post-data "username=admin&password=EGG"
 	fuzzagotchi -M POST -u https://example.com/login -w passwords.txt --post-data "{username:admin, password: EGG}"
 	`,
@@ -41,7 +41,7 @@ const DEFAULT_WORDLIST = "/usr/share/seclists/Discovery/Web-Content/common.txt"
 func main() {
 	flags := libhelpers.NewFlags()
 
-	cmd.Flags().BoolVarP(&flags.Color, "color", "", false, "The output color")
+	cmd.Flags().BoolVarP(&flags.Color, "color", "", false, "Colorize the output")
 	cmd.Flags().StringVarP(&flags.ContentLength, "content-length", "", "-1", "Display the specific content length e.g. 120-560")
 	cmd.Flags().StringVarP(&flags.Cookie, "cookie", "C", "", "Custom cookie e.g. \"name1=value1; name2=value2\"")
 	cmd.Flags().StringVarP(&flags.TimeDelay, "delay", "", "0.2-0.5", "Time delay (seconds) per requests e.g. 1.2. Or random delay e.g. 0.8-1.5")
