@@ -26,8 +26,7 @@ func Fuzz(flags libhelpers.Flags) {
 	fileScanner.Split(bufio.ScanLines)
 
 	// Initialize a configuration for request
-	reqConf := libgotchi.NewReqConf()
-	reqConfPtr := &reqConf
+	req := libgotchi.NewReq()
 
 	var word string
 	for fileScanner.Scan() {
@@ -41,9 +40,9 @@ func Fuzz(flags libhelpers.Flags) {
 		// ******************************************************************
 
 		// Update url
-		reqConfPtr.Url = flags.Url
+		req.Url = flags.Url
 		// Update method
-		reqConfPtr.Method = flags.Method
+		req.Method = flags.Method
 		// Update headers
 		if len(flags.Header) > 0 {
 			headers := strings.Split(flags.Header, ";")
@@ -51,7 +50,7 @@ func Fuzz(flags libhelpers.Flags) {
 				header := strings.Split(strings.TrimSpace(v), ":")
 				key := header[0]
 				val := header[1]
-				reqConfPtr.Headers[key] = val
+				req.Headers[key] = val
 			}
 		}
 		// Update cookies
@@ -61,12 +60,12 @@ func Fuzz(flags libhelpers.Flags) {
 				c := strings.Split(strings.TrimSpace(v), "=")
 				key := c[0]
 				val := c[1]
-				reqConfPtr.Cookies[key] = val
+				req.Cookies[key] = val
 			}
 		}
 
 		// Send request
-		res := libgotchi.SendRequest(reqConfPtr, word)
+		res := req.Send(word)
 		// ******************************************************************
 
 		result := fmt.Sprintf(

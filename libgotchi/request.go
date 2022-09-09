@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type ReqConf struct {
+type Req struct {
 	Method  string
 	Url     string
 	Host    string
@@ -15,23 +15,13 @@ type ReqConf struct {
 	Data    []byte
 }
 
-func NewReqConf() ReqConf {
-	var reqConf ReqConf
-	reqConf.Method = "GET"
-	reqConf.Url = ""
-	reqConf.Host = ""
-	reqConf.Headers = make(map[string]string)
-	reqConf.Cookies = make(map[string]string)
-	return reqConf
-}
-
-func SendRequest(reqConf *ReqConf, word string) Response {
+func (r *Req) Send(word string) Res {
 	// *******************************************************************************
 	// Replace EGG to word
 	// *******************************************************************************
-	reqConf.Method = strings.Replace(reqConf.Method, "EGG", word, -1)
-	reqConf.Url = strings.Replace(reqConf.Url, "EGG", word, -1)
-	reqConf.Host = strings.Replace(reqConf.Host, "EGG", word, -1)
+	r.Method = strings.Replace(r.Method, "EGG", word, -1)
+	r.Url = strings.Replace(r.Url, "EGG", word, -1)
+	r.Host = strings.Replace(r.Host, "EGG", word, -1)
 	// *******************************************************************************
 
 	tr := &http.Transport{
@@ -46,7 +36,7 @@ func SendRequest(reqConf *ReqConf, word string) Response {
 		Transport: tr,
 	}
 
-	req, err := http.NewRequest(reqConf.Method, reqConf.Url, nil)
+	req, err := http.NewRequest(r.Method, r.Url, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -55,14 +45,14 @@ func SendRequest(reqConf *ReqConf, word string) Response {
 	// Add custom headers
 	// *******************************************************************************
 	req.Header.Add("If-None-Match", `W/"wyzzy"`)
-	for key, val := range reqConf.Headers {
+	for key, val := range r.Headers {
 		// Replace EGG to word
 		key = strings.Replace(key, "EGG", word, -1)
 		val = strings.Replace(val, "EGG", word, -1)
 		req.Header.Add(key, val)
 	}
 	// Add custom cookies
-	for key, val := range reqConf.Cookies {
+	for key, val := range r.Cookies {
 		// Replace EGG to word
 		key = strings.Replace(key, "EGG", word, -1)
 		val = strings.Replace(val, "EGG", word, -1)
@@ -83,4 +73,14 @@ func SendRequest(reqConf *ReqConf, word string) Response {
 	response := NewResponse(resp)
 
 	return response
+}
+
+func NewReq() Req {
+	var req Req
+	req.Method = "GET"
+	req.Url = ""
+	req.Host = ""
+	req.Headers = make(map[string]string)
+	req.Cookies = make(map[string]string)
+	return req
 }
