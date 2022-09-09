@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type Response struct {
+type Res struct {
 	Body          string
 	ContentLength int
 	Headers       map[string]string
@@ -13,18 +13,18 @@ type Response struct {
 	StatusCode    int
 }
 
-func NewResponse(resp *http.Response) Response {
-	var response Response
-	response.ContentLength = int(resp.ContentLength)
-	response.Headers = make(map[string]string)
-	response.Status = resp.Status
-	response.StatusCode = resp.StatusCode
+func NewResponse(resp *http.Response) Res {
+	var r Res
+	r.ContentLength = int(resp.ContentLength)
+	r.Headers = make(map[string]string)
+	r.Status = resp.Status
+	r.StatusCode = resp.StatusCode
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err == nil {
-		response.Body = string(body)
+		r.Body = string(body)
 	} else {
 		panic(err)
 	}
-	return response
+	return r
 }
