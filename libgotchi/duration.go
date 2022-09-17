@@ -12,14 +12,14 @@ import (
 	"github.com/hideckies/fuzzagotchi/libhelpers"
 )
 
-func NewDuration(flags libhelpers.Flags) time.Duration {
+func NewDuration(delay string) time.Duration {
 	var duration time.Duration
 
 	r, _ := regexp.Compile("[+]?([0-9]*[.])?[0-9]+")
 	rrange, _ := regexp.Compile("([+]?([0-9]*[.])?[0-9]+)-([+]?([0-9]*[.])?[0-9]+)")
 
-	if rrange.MatchString(flags.TimeDelay) {
-		durations := strings.Split(flags.TimeDelay, "-")
+	if rrange.MatchString(delay) {
+		durations := strings.Split(delay, "-")
 		dmin, _ := strconv.ParseFloat(durations[0], 64)
 		dmax, _ := strconv.ParseFloat(durations[1], 64)
 		if dmin > dmax {
@@ -36,8 +36,8 @@ func NewDuration(flags libhelpers.Flags) time.Duration {
 			fmt.Println(ERROR_DURATION)
 			os.Exit(0)
 		}
-	} else if r.MatchString(flags.TimeDelay) {
-		s := fmt.Sprintf("%vs", flags.TimeDelay)
+	} else if r.MatchString(delay) {
+		s := fmt.Sprintf("%vs", delay)
 		duration, _ = time.ParseDuration(s)
 	} else {
 		fmt.Println(ERROR_DURATION)

@@ -7,22 +7,20 @@ import (
 )
 
 type Req struct {
-	Method  string
-	Url     string
-	Host    string
-	Headers map[string]string
-	Cookies map[string]string
-	Data    []byte
+	Config   Conf
+	Cookies  map[string]string
+	Data     []byte
+	Duration time.Duration
+	Headers  map[string]string
+	Host     string
+	Method   string
+	Url      string
 }
 
 func (r *Req) Send(word string) Res {
-	// *******************************************************************************
-	// Replace EGG to word
-	// *******************************************************************************
 	r.Method = strings.Replace(r.Method, "EGG", word, -1)
 	r.Url = strings.Replace(r.Url, "EGG", word, -1)
 	r.Host = strings.Replace(r.Host, "EGG", word, -1)
-	// *******************************************************************************
 
 	tr := &http.Transport{
 		MaxIdleConns:       10,
@@ -41,9 +39,6 @@ func (r *Req) Send(word string) Res {
 		panic(err)
 	}
 
-	// *******************************************************************************
-	// Add custom headers
-	// *******************************************************************************
 	req.Header.Add("If-None-Match", `W/"wyzzy"`)
 	for key, val := range r.Headers {
 		// Replace EGG to word
@@ -62,7 +57,6 @@ func (r *Req) Send(word string) Res {
 		}
 		req.AddCookie(cookie)
 	}
-	// *******************************************************************************
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -70,17 +64,19 @@ func (r *Req) Send(word string) Res {
 	}
 	defer resp.Body.Close()
 
-	response := NewResponse(resp)
+	response := NewResponse(resp, r, word)
 
 	return response
 }
 
-func NewReq() Req {
+func NewReq(conf Conf) Req {
 	var req Req
-	req.Method = "GET"
-	req.Url = ""
-	req.Host = ""
-	req.Headers = make(map[string]string)
+	req.Config = conf
 	req.Cookies = make(map[string]string)
+	req.Duration = NewDuration(conf.TimeDelay)
+	req.Headers = make(map[string]string)
+	req.Host = ""
+	req.Method = conf.Method
+	req.Url = conf.Url
 	return req
 }
