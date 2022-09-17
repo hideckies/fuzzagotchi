@@ -8,15 +8,16 @@ import (
 	"time"
 )
 
-type Worker struct {
-	mtx      sync.Mutex
-	counters map[string]int
+type Job struct {
+	Counters map[string]int
+	Mutex    sync.Mutex
+	Threads  int
 }
 
-func (w *Worker) inc(name string) {
-	w.mtx.Lock()
-	defer w.mtx.Unlock()
-	w.counters[name]++
+func (j *Job) inc(name string) {
+	j.Mutex.Lock()
+	defer j.Mutex.Unlock()
+	j.Counters[name]++
 }
 
 func Worker1() {
@@ -102,15 +103,15 @@ func waitgroup() {
 
 // mutex
 func mutex() {
-	w := Worker{
-		counters: map[string]int{"a": 0, "b": 0},
+	j := Job{
+		Counters: map[string]int{"a": 0, "b": 0},
 	}
 
 	var wg sync.WaitGroup
 
 	doIncrement := func(name string, n int) {
 		for i := 0; i < n; i++ {
-			w.inc(name)
+			j.inc(name)
 		}
 		wg.Done()
 	}
@@ -121,5 +122,5 @@ func mutex() {
 	go doIncrement("b", 1000)
 
 	wg.Wait()
-	fmt.Println(w.counters)
+	fmt.Println(j.Counters)
 }

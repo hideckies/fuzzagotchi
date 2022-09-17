@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/hideckies/fuzzagotchi/libfuzz"
+	"github.com/hideckies/fuzzagotchi/libgotchi"
 	"github.com/hideckies/fuzzagotchi/libhelpers"
 	"github.com/spf13/cobra"
 )
@@ -49,7 +50,7 @@ func main() {
 	cmd.Flags().StringVarP(&flags.Method, "method", "M", "GET", "Specific method e.g. GET, POST, PUT, OPTIONS, etc.")
 	cmd.Flags().StringVarP(&flags.PostData, "post-data", "", "", "POST request with data e.g. \"username=admin&password=EGG\"")
 	cmd.Flags().IntSliceVarP(&flags.Status, "status", "s", []int{200, 204, 301, 302, 307, 401, 403}, "Display the specific status codes only")
-	cmd.Flags().Int8VarP(&flags.Threads, "threads", "t", 10, "Number of concurrent threads.")
+	cmd.Flags().IntVarP(&flags.Threads, "threads", "t", 10, "Number of concurrent threads.")
 	cmd.Flags().StringVarP(&flags.Url, "url", "u", "", "Target URL (required)")
 	cmd.MarkFlagRequired("url")
 	cmd.Flags().BoolVarP(&flags.Verbose, "verbose", "v", false, "Verbose mode")
@@ -85,7 +86,9 @@ func main() {
 			}
 		}
 
-		libfuzz.Fuzz(flags)
+		conf := libgotchi.NewConf(flags)
+
+		libfuzz.Fuzz(conf)
 	}
 
 	if err := cmd.Execute(); err != nil {

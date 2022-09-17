@@ -8,7 +8,7 @@ type Flags struct {
 	Method        string
 	PostData      string
 	Status        []int
-	Threads       int8
+	Threads       int
 	TimeDelay     string
 	Url           string
 	Verbose       bool
