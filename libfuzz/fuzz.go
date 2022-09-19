@@ -75,7 +75,10 @@ func Process(wg *sync.WaitGroup, conf libgotchi.Conf, word string, resCh chan li
 	}
 
 	// Send request
-	res := req.Send(word)
+	res, err := req.Send(word)
+	if err != nil && conf.Verbose {
+		fmt.Printf("%-10s\t\tError: %s", word, err)
+	}
 	resCh <- res
 }
 
@@ -95,27 +98,37 @@ func Output(res libgotchi.Res) {
 
 	rcl, _ := regexp.Compile("^([1-9][0-9]*|0)$")
 	rclrange, _ := regexp.Compile("^(([1-9][0-9]*|0)-([1-9][0-9]*|0))$")
-	if rclrange.MatchString(res.Config.ContentLength) {
-		contentlengths := strings.Split(res.Config.ContentLength, "-")
-		cmin, _ := strconv.Atoi(contentlengths[0])
-		cmax, _ := strconv.Atoi(contentlengths[1])
-		if libutils.IntContains(res.Config.Status, res.StatusCode) && (cmin <= res.ContentLength && res.ContentLength <= cmax) {
-			fmt.Println(result)
-		} else if res.Config.Verbose {
-			fmt.Println(resultFailed)
-		}
-	} else if rcl.MatchString(res.Config.ContentLength) {
-		cl, _ := strconv.Atoi(res.Config.ContentLength)
-		if libutils.IntContains(res.Config.Status, res.StatusCode) && cl == res.ContentLength {
+
+	if rcl.MatchString(res.Config.NoContentLength) {
+		ncl, _ := strconv.Atoi(res.Config.NoContentLength)
+		if libutils.IntContains(res.Config.Status, res.StatusCode) && ncl != res.ContentLength {
 			fmt.Println(result)
 		} else if res.Config.Verbose {
 			fmt.Println(resultFailed)
 		}
 	} else {
-		if libutils.IntContains(res.Config.Status, res.StatusCode) {
-			fmt.Println(result)
-		} else if res.Config.Verbose {
-			fmt.Println(resultFailed)
+		if rclrange.MatchString(res.Config.ContentLength) {
+			contentlengths := strings.Split(res.Config.ContentLength, "-")
+			cmin, _ := strconv.Atoi(contentlengths[0])
+			cmax, _ := strconv.Atoi(contentlengths[1])
+			if libutils.IntContains(res.Config.Status, res.StatusCode) && (cmin <= res.ContentLength && res.ContentLength <= cmax) {
+				fmt.Println(result)
+			} else if res.Config.Verbose {
+				fmt.Println(resultFailed)
+			}
+		} else if rcl.MatchString(res.Config.ContentLength) {
+			cl, _ := strconv.Atoi(res.Config.ContentLength)
+			if libutils.IntContains(res.Config.Status, res.StatusCode) && cl == res.ContentLength {
+				fmt.Println(result)
+			} else if res.Config.Verbose {
+				fmt.Println(resultFailed)
+			}
+		} else {
+			if libutils.IntContains(res.Config.Status, res.StatusCode) {
+				fmt.Println(result)
+			} else if res.Config.Verbose {
+				fmt.Println(resultFailed)
+			}
 		}
 	}
 }

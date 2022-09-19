@@ -17,7 +17,7 @@ type Req struct {
 	Url      string
 }
 
-func (r *Req) Send(word string) Res {
+func (r *Req) Send(word string) (Res, error) {
 	r.Method = strings.Replace(r.Method, "EGG", word, -1)
 	r.Url = strings.Replace(r.Url, "EGG", word, -1)
 	r.Host = strings.Replace(r.Host, "EGG", word, -1)
@@ -36,7 +36,7 @@ func (r *Req) Send(word string) Res {
 
 	req, err := http.NewRequest(r.Method, r.Url, nil)
 	if err != nil {
-		panic(err)
+		return ErrorResponse(r, word), err
 	}
 
 	req.Header.Add("If-None-Match", `W/"wyzzy"`)
@@ -60,13 +60,13 @@ func (r *Req) Send(word string) Res {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return ErrorResponse(r, word), err
 	}
 	defer resp.Body.Close()
 
 	response := NewResponse(resp, r, word)
 
-	return response
+	return response, nil
 }
 
 func NewReq(conf Conf) Req {

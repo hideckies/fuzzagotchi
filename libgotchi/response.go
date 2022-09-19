@@ -35,3 +35,9 @@ func NewResponse(resp *http.Response, req *Req, word string) Res {
 	}
 	return r
 }
+
+func ErrorResponse(req *Req, word string) Res {
+	var r Res
+	r.Config = req.Config
+	return r
+}
