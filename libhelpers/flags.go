@@ -12,6 +12,7 @@ type Flags struct {
 	NoStatus        []int
 	Threads         int
 	TimeDelay       string
+	Timeout         int
 	Url             string
 	Verbose         bool
 	Wordlist        string
@@ -30,6 +31,7 @@ func NewFlags() Flags {
 	flags.NoStatus = []int{}
 	flags.Threads = 0
 	flags.TimeDelay = ""
+	flags.Timeout = 0
 	flags.Url = ""
 	flags.Verbose = false
 	flags.Wordlist = ""
