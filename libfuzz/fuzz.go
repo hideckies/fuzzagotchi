@@ -28,7 +28,6 @@ func Fuzz(conf libgotchi.Conf) {
 	fileScanner.Split(bufio.ScanLines)
 
 	resCh := make(chan libgotchi.Res)
-
 	words := make([]string, 0)
 
 	for fileScanner.Scan() {

@@ -55,6 +55,7 @@ func init() {
 	rootCmd.Flags().IntSliceVarP(&flags.Status, "status", "s", []int{200, 204, 301, 302, 307, 401, 403}, "Display given status codes only.")
 	rootCmd.Flags().IntSliceVarP(&flags.NoStatus, "no-status", "", []int{}, "Not display given status codes.")
 	rootCmd.Flags().IntVarP(&flags.Threads, "threads", "t", 10, "Number of concurrent threads.")
+	rootCmd.Flags().IntVarP(&flags.Timeout, "timeout", "", 10, "HTTP request timeout in seconds.")
 	rootCmd.Flags().StringVarP(&flags.Url, "url", "u", "", "Target URL (required)")
 	rootCmd.MarkFlagRequired("url")
 	rootCmd.Flags().BoolVarP(&flags.Verbose, "verbose", "v", false, "Verbose mode")

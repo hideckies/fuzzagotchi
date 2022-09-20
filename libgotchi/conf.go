@@ -13,6 +13,7 @@ type Conf struct {
 	Status          []int
 	Threads         int
 	TimeDelay       string
+	Timeout         int
 	Url             string
 	Verbose         bool
 	Wordlist        string
@@ -30,6 +31,7 @@ func NewConf(flags libhelpers.Flags) Conf {
 	conf.Status = flags.Status
 	conf.Threads = flags.Threads
 	conf.TimeDelay = flags.TimeDelay
+	conf.Timeout = flags.Timeout
 	conf.Url = flags.Url
 	conf.Verbose = flags.Verbose
 	conf.Wordlist = flags.Wordlist

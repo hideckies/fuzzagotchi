@@ -22,16 +22,19 @@ func (r *Req) Send(word string) (Res, error) {
 	r.Url = strings.Replace(r.Url, "EGG", word, -1)
 	r.Host = strings.Replace(r.Host, "EGG", word, -1)
 
-	tr := &http.Transport{
-		MaxIdleConns:       10,
-		IdleConnTimeout:    30 * time.Second,
-		DisableCompression: true,
-	}
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
-		Transport: tr,
+		Timeout: time.Duration(time.Duration(r.Config.Timeout) * time.Second),
+		Transport: &http.Transport{
+			// Proxy: nil,
+			MaxConnsPerHost:     500,
+			MaxIdleConns:        1000,
+			MaxIdleConnsPerHost: 500,
+			IdleConnTimeout:     30 * time.Second,
+			// DisableCompression:  true,
+		},
 	}
 
 	req, err := http.NewRequest(r.Method, r.Url, nil)
