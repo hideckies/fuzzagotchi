@@ -8,10 +8,10 @@ type Flags struct {
 	Header          string
 	Method          string
 	PostData        string
+	Rate            string
 	Status          []int
-	NoStatus        []int
+	HideStatus      []int
 	Threads         int
-	TimeDelay       string
 	Timeout         int
 	Url             string
 	Verbose         bool
@@ -27,10 +27,10 @@ func NewFlags() Flags {
 	flags.Header = ""
 	flags.Method = ""
 	flags.PostData = ""
+	flags.Rate = ""
 	flags.Status = []int{}
-	flags.NoStatus = []int{}
+	flags.HideStatus = []int{}
 	flags.Threads = 0
-	flags.TimeDelay = ""
 	flags.Timeout = 0
 	flags.Url = ""
 	flags.Verbose = false

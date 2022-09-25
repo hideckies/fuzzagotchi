@@ -12,18 +12,6 @@ A fuzzing tool written in Go. It helps to discover directories, files, parameter
 
 <br />
 
-## Prerequisites
-
-1. **Seclists**
-
-    Fuzzagotchi uses [seclists](https://github.com/danielmiessler/SecLists) as default wordlist.
-
-    ```sh
-    sudo apt install seclists
-    ```
-
-<br />
-
 ## Example
 
 Fuzzagotchi uses "EGG" keyword for fuzzing.  
