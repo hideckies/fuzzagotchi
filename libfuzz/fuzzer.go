@@ -15,11 +15,18 @@ import (
 	"github.com/hideckies/fuzzagotchi/libutils"
 )
 
-// Fuzz fuzzes on the content discovery.
-func Fuzz(conf libgotchi.Conf) {
-	var wg sync.WaitGroup
+type Fuzzer struct {
+	Config libgotchi.Conf
+}
 
-	readFile, err := os.Open(conf.Wordlist)
+// Run executes a fuzzing
+func (f *Fuzzer) Run() {
+	// var cancel context.CancelFunc
+
+	var wg sync.WaitGroup
+	wg.Add(f.Config.Threads)
+
+	readFile, err := os.Open(f.Config.Wordlist)
 	if err != nil {
 		color.HiRed("%v\nPlease install seclists by running 'sudo apt install seclists'.\n", err)
 		os.Exit(0)
@@ -27,68 +34,65 @@ func Fuzz(conf libgotchi.Conf) {
 	fileScanner := bufio.NewScanner(readFile)
 	fileScanner.Split(bufio.ScanLines)
 
-	resCh := make(chan libgotchi.Res)
-	words := make([]string, 0)
+	wordCh := make(chan string, f.Config.Threads)
+
+	for i := 0; i < f.Config.Threads; i++ {
+		go f.worker(&wg, i, wordCh)
+	}
 
 	for fileScanner.Scan() {
-		wg.Add(1)
 		word := fileScanner.Text()
-		words = append(words, word)
-		go Process(&wg, conf, word, resCh)
+		wordCh <- word
 	}
+	close(wordCh)
 
 	readFile.Close()
 
-	for i := 0; i < len(words); i++ {
-		res := <-resCh
-		Output(res)
-	}
 	wg.Wait()
 }
 
-func Process(wg *sync.WaitGroup, conf libgotchi.Conf, word string, resCh chan libgotchi.Res) {
+func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string) {
 	defer wg.Done()
-
-	req := libgotchi.NewReq(conf)
-
-	time.Sleep(req.Duration)
-
-	if len(conf.Header) > 0 {
-		headers := strings.Split(conf.Header, ";")
-		for _, v := range headers {
-			header := strings.Split(strings.TrimSpace(v), ":")
-			key := header[0]
-			val := header[1]
-			req.Headers[key] = val
+	for {
+		select {
+		case word, ok := <-wordCh:
+			if !ok {
+				return
+			}
+			f.process(word)
+			select {
+			case <-time.After(libgotchi.NewRate(f.Config.Rate)):
+			}
 		}
 	}
-	// Update cookies
-	if len(conf.Cookie) > 0 {
-		cookies := strings.Split(conf.Cookie, ";")
-		for _, v := range cookies {
-			c := strings.Split(strings.TrimSpace(v), "=")
-			key := c[0]
-			val := c[1]
-			req.Cookies[key] = val
-		}
-	}
+}
+
+func (f *Fuzzer) process(word string) {
+	req := libgotchi.NewReq(f.Config)
+
+	time.Sleep(req.Rate)
 
 	// Send request
 	res, err := req.Send(word)
-	if err != nil && conf.Verbose {
-		fmt.Printf("%-10s\t\tError: %s", word, err)
+	if err != nil {
+		if f.Config.Verbose {
+			fmt.Printf("%-10s\t\tError: %s\n", word, err)
+		}
+		f.process(word)
+		return
 	}
-	resCh <- res
+
+	f.output(res)
 }
 
 // Print results
-func Output(res libgotchi.Res) {
+func (f *Fuzzer) output(res libgotchi.Res) {
 	result := fmt.Sprintf(
 		"%-10s\t\tStatus: %d, Content Length: %d, Duration: %.2fs",
 		res.Word,
 		res.StatusCode,
 		res.ContentLength,
-		res.Duration.Abs().Seconds())
+		res.Rate.Abs().Seconds())
 	resultFailed := fmt.Sprintf("[x] %v", result)
 	if res.Config.Color {
 		result = color.HiGreenString(result)
@@ -130,4 +134,11 @@ func Output(res libgotchi.Res) {
 			}
 		}
 	}
+}
+
+// NewFuzzer returns a new Fuzzer
+func NewFuzzer(conf libgotchi.Conf) Fuzzer {
+	var f Fuzzer
+	f.Config = conf
+	return f
 }

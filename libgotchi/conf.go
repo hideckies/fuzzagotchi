@@ -3,20 +3,7 @@ package libgotchi
 import "github.com/hideckies/fuzzagotchi/libhelpers"
 
 type Conf struct {
-	Color           bool
-	ContentLength   string
-	NoContentLength string
-	Cookie          string
-	Header          string
-	Method          string
-	PostData        string
-	Status          []int
-	Threads         int
-	TimeDelay       string
-	Timeout         int
-	Url             string
-	Verbose         bool
-	Wordlist        string
+	libhelpers.Flags
 }
 
 func NewConf(flags libhelpers.Flags) Conf {
@@ -28,9 +15,9 @@ func NewConf(flags libhelpers.Flags) Conf {
 	conf.Header = flags.Header
 	conf.Method = flags.Method
 	conf.PostData = flags.PostData
+	conf.Rate = flags.Rate
 	conf.Status = flags.Status
 	conf.Threads = flags.Threads
-	conf.TimeDelay = flags.TimeDelay
 	conf.Timeout = flags.Timeout
 	conf.Url = flags.Url
 	conf.Verbose = flags.Verbose
