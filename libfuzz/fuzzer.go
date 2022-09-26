@@ -3,6 +3,7 @@ package libfuzz
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -21,15 +22,13 @@ type Fuzzer struct {
 
 // Run executes a fuzzing
 func (f *Fuzzer) Run() {
-	// var cancel context.CancelFunc
-
 	var wg sync.WaitGroup
 	wg.Add(f.Config.Threads)
 
 	readFile, err := os.Open(f.Config.Wordlist)
 	if err != nil {
-		color.HiRed("%v\nPlease install seclists by running 'sudo apt install seclists'.\n", err)
-		os.Exit(0)
+		log.Fatal(err)
+		return
 	}
 	fileScanner := bufio.NewScanner(readFile)
 	fileScanner.Split(bufio.ScanLines)
@@ -45,9 +44,7 @@ func (f *Fuzzer) Run() {
 		wordCh <- word
 	}
 	close(wordCh)
-
 	readFile.Close()
-
 	wg.Wait()
 }
 
