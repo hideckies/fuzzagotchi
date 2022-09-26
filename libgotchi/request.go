@@ -1,58 +1,65 @@
 package libgotchi
 
 import (
+	"bytes"
+	"crypto/tls"
+	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
 )
 
 type Req struct {
-	Config  Conf
-	Cookies map[string]string
-	Data    []byte
-	Headers map[string]string
-	Host    string
-	Method  string
-	Rate    time.Duration
-	Url     string
+	Client   *http.Client
+	Config   Conf
+	Cookies  map[string]string
+	Data     []byte
+	Headers  map[string]string
+	Host     string
+	Method   string
+	PostData io.Reader
+	Rate     time.Duration
+	Url      string
 }
 
 func (r *Req) Send(word string) (Res, error) {
-	r.Method = strings.Replace(r.Method, "EGG", word, -1)
-	r.Url = strings.Replace(r.Url, "EGG", word, -1)
-	r.Host = strings.Replace(r.Host, "EGG", word, -1)
+	r.Host = strings.ReplaceAll(r.Host, "EGG", word)
+	r.Method = strings.ReplaceAll(r.Method, "EGG", word)
+	postdata := []byte(strings.ReplaceAll(string(r.Config.PostData), "EGG", word))
+	r.PostData = bytes.NewReader(postdata)
+	if len(postdata) > 0 {
+		r.Method = "POST"
+	}
+	r.Url = strings.ReplaceAll(r.Url, "EGG", word)
 
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
-		Timeout:       time.Duration(time.Duration(r.Config.Timeout) * time.Second),
-		Transport: &http.Transport{
-			// Proxy: nil,
-			MaxConnsPerHost:     500,
-			MaxIdleConns:        100,
-			MaxIdleConnsPerHost: 100,
-			IdleConnTimeout:     30 * time.Second,
-			// DisableCompression:  true,
-		},
+	if _, ok := r.Headers["User-Agent"]; !ok {
+		r.Headers["User-Agent"] = "Fuzzagotchi"
+	}
+	if _, ok := r.Headers["Connection"]; !ok {
+		r.Headers["Connection"] = "Keep-Alive"
+	}
+	if _, ok := r.Headers["Accept-Language"]; !ok {
+		r.Headers["Accept-Language"] = "en-US"
 	}
 
-	req, err := http.NewRequest(r.Method, r.Url, nil)
+	req, err := http.NewRequest(r.Method, r.Url, r.PostData)
 	if err != nil {
 		return ErrorResponse(r, word), err
 	}
 
-	// Fuzzing headers
-	req.Header.Add("If-None-Match", `W/"wyzzy"`)
+	// Headers
 	for key, val := range r.Headers {
 		// Replace EGG to word
-		key = strings.Replace(key, "EGG", word, -1)
-		val = strings.Replace(val, "EGG", word, -1)
-		req.Header.Add(key, val)
+		key = strings.ReplaceAll(key, "EGG", word)
+		val = strings.ReplaceAll(val, "EGG", word)
+		req.Header.Set(key, val)
 	}
-	// Fuzzing cookies
+	// Cookies
 	for key, val := range r.Cookies {
 		// Replace EGG to word
-		key = strings.Replace(key, "EGG", word, -1)
-		val = strings.Replace(val, "EGG", word, -1)
+		key = strings.ReplaceAll(key, "EGG", word)
+		val = strings.ReplaceAll(val, "EGG", word)
 		cookie := &http.Cookie{
 			Name:  key,
 			Value: val,
@@ -60,7 +67,7 @@ func (r *Req) Send(word string) (Res, error) {
 		req.AddCookie(cookie)
 	}
 
-	resp, err := client.Do(req)
+	resp, err := r.Client.Do(req)
 	if err != nil {
 		return ErrorResponse(r, word), err
 	}
@@ -78,6 +85,8 @@ func NewReq(conf Conf) Req {
 	req.Headers = make(map[string]string)
 	req.Host = ""
 	req.Method = conf.Method
+	postdata := []byte(conf.PostData)
+	req.PostData = bytes.NewReader(postdata)
 	req.Rate = NewRate(conf.Rate)
 	req.Url = conf.Url
 
@@ -100,6 +109,28 @@ func NewReq(conf Conf) Req {
 			val := c[1]
 			req.Cookies[key] = val
 		}
+	}
+
+	req.Client = &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
+		Timeout:       time.Duration(time.Duration(req.Config.Timeout) * time.Second),
+		Transport: &http.Transport{
+			ForceAttemptHTTP2: true,
+			// Proxy: nil,
+			MaxConnsPerHost:     500,
+			MaxIdleConns:        1000,
+			MaxIdleConnsPerHost: 500,
+			// IdleConnTimeout:     30 * time.Second,
+			DialContext: (&net.Dialer{
+				Timeout: time.Duration(time.Duration(req.Config.Timeout) * time.Second),
+			}).DialContext,
+			TLSHandshakeTimeout: time.Duration(time.Duration(req.Config.Timeout) * time.Second),
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+				Renegotiation:      tls.RenegotiateOnceAsClient,
+				ServerName:         "",
+			},
+		},
 	}
 
 	return req

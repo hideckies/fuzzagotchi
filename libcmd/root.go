@@ -1,8 +1,10 @@
 package libcmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 
@@ -14,9 +16,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "fuzzagotchi",
-	Version: "0.1.0",
-	Short:   "A fuzzing tool written in Go.",
+	Use:          "fuzzagotchi",
+	Version:      "0.1.0",
+	Short:        "A fuzzing tool written in Go.",
+	SilenceUsage: true,
 	Example: `
   [Content Discovery]
 	fuzzagotchi -u https://example.com/EGG -w wordlist.txt
@@ -61,6 +64,12 @@ func init() {
 	rootCmd.MarkFlagRequired("wordlist")
 
 	rootCmd.Run = func(cmd1 *cobra.Command, args []string) {
+		// Check if "EGG" keyword is contained in command.
+		if !flags.ValidateEGG() {
+			fmt.Println(libgotchi.ERROR_EGG_NOT_FOUND)
+			os.Exit(0)
+		}
+
 		var s []string
 		s = append(s, fmt.Sprintf("%s\n\n", libhelpers.LOGO))
 		s = append(s, fmt.Sprintf("%-10s\t\t%t\n", "Output Color:", flags.Color))
@@ -106,14 +115,32 @@ func init() {
 		}
 
 		conf := libgotchi.NewConf(flags)
-
 		fuzzer := libfuzz.NewFuzzer(conf)
 		fuzzer.Run()
 	}
 }
 
+var mainContext context.Context
+
 func Execute() {
+	var cancel context.CancelFunc
+	mainContext, cancel = context.WithCancel(context.Background())
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+	// signal.Notify(signalCh, os.Interrupt)
+	go func() {
+		select {
+		case <-sigCh:
+			fmt.Println("Keyboard interrupt detected, terminating.")
+			cancel()
+			os.Exit(0)
+		case <-mainContext.Done():
+			return
+		}
+	}()
+
 	if err := rootCmd.Execute(); err != nil {
-		os.Exit(0)
+		os.Exit(1)
 	}
 }

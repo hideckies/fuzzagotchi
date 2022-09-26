@@ -1,5 +1,9 @@
 package libhelpers
 
+import (
+	"strings"
+)
+
 type Flags struct {
 	Color           bool
 	ContentLength   string
@@ -16,6 +20,25 @@ type Flags struct {
 	Url             string
 	Verbose         bool
 	Wordlist        string
+}
+
+func (f *Flags) ValidateEGG() bool {
+	if strings.Contains(f.Cookie, "EGG") {
+		return true
+	}
+	if strings.Contains(f.Header, "EGG") {
+		return true
+	}
+	if strings.Contains(f.Method, "EGG") {
+		return true
+	}
+	if strings.Contains(f.PostData, "EGG") {
+		return true
+	}
+	if strings.Contains(f.Url, "EGG") {
+		return true
+	}
+	return false
 }
 
 func NewFlags() Flags {
