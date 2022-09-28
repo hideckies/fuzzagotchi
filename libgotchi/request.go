@@ -79,16 +79,16 @@ func (r *Req) Send(word string) (Res, error) {
 }
 
 func NewReq(conf Conf) Req {
-	var req Req
-	req.Config = conf
-	req.Cookies = make(map[string]string)
-	req.Headers = make(map[string]string)
-	req.Host = ""
-	req.Method = conf.Method
+	var r Req
+	r.Config = conf
+	r.Cookies = make(map[string]string)
+	r.Headers = make(map[string]string)
+	r.Host = ""
+	r.Method = conf.Method
 	postdata := []byte(conf.PostData)
-	req.PostData = bytes.NewReader(postdata)
-	req.Rate = NewRate(conf.Rate)
-	req.Url = conf.Url
+	r.PostData = bytes.NewReader(postdata)
+	r.Rate = NewRate(conf.Rate)
+	r.Url = conf.Url
 
 	// Update headers
 	if len(conf.Header) > 0 {
@@ -97,7 +97,7 @@ func NewReq(conf Conf) Req {
 			header := strings.Split(strings.TrimSpace(v), ":")
 			key := header[0]
 			val := header[1]
-			req.Headers[key] = val
+			r.Headers[key] = val
 		}
 	}
 	// Update cookies
@@ -107,13 +107,13 @@ func NewReq(conf Conf) Req {
 			c := strings.Split(strings.TrimSpace(v), "=")
 			key := c[0]
 			val := c[1]
-			req.Cookies[key] = val
+			r.Cookies[key] = val
 		}
 	}
 
-	req.Client = &http.Client{
+	r.Client = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
-		Timeout:       time.Duration(time.Duration(req.Config.Timeout) * time.Second),
+		Timeout:       time.Duration(time.Duration(r.Config.Timeout) * time.Second),
 		Transport: &http.Transport{
 			ForceAttemptHTTP2: true,
 			// Proxy: nil,
@@ -122,9 +122,9 @@ func NewReq(conf Conf) Req {
 			MaxIdleConnsPerHost: 500,
 			// IdleConnTimeout:     30 * time.Second,
 			DialContext: (&net.Dialer{
-				Timeout: time.Duration(time.Duration(req.Config.Timeout) * time.Second),
+				Timeout: time.Duration(time.Duration(r.Config.Timeout) * time.Second),
 			}).DialContext,
-			TLSHandshakeTimeout: time.Duration(time.Duration(req.Config.Timeout) * time.Second),
+			TLSHandshakeTimeout: time.Duration(time.Duration(r.Config.Timeout) * time.Second),
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 				Renegotiation:      tls.RenegotiateOnceAsClient,
@@ -133,5 +133,5 @@ func NewReq(conf Conf) Req {
 		},
 	}
 
-	return req
+	return r
 }
