@@ -12,10 +12,12 @@ func NewConf(flags libhelpers.Flags) Conf {
 	conf.ContentLength = flags.ContentLength
 	conf.NoContentLength = flags.NoContentLength
 	conf.Cookie = flags.Cookie
+	conf.FollowRedirect = flags.FollowRedirect
 	conf.Header = flags.Header
 	conf.Method = flags.Method
 	conf.PostData = flags.PostData
 	conf.Rate = flags.Rate
+	conf.Recursion = flags.Recursion
 	conf.Status = flags.Status
 	conf.Threads = flags.Threads
 	conf.Timeout = flags.Timeout

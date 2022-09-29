@@ -9,10 +9,12 @@ type Flags struct {
 	ContentLength   string
 	NoContentLength string
 	Cookie          string
+	FollowRedirect  bool
 	Header          string
 	Method          string
 	PostData        string
 	Rate            string
+	Recursion       bool
 	Status          []int
 	HideStatus      []int
 	Threads         int
@@ -47,10 +49,12 @@ func NewFlags() Flags {
 	flags.ContentLength = "-1"
 	flags.NoContentLength = "-1"
 	flags.Cookie = ""
+	flags.FollowRedirect = false
 	flags.Header = ""
 	flags.Method = ""
 	flags.PostData = ""
 	flags.Rate = ""
+	flags.Recursion = false
 	flags.Status = []int{}
 	flags.HideStatus = []int{}
 	flags.Threads = 0
