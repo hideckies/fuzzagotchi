@@ -49,10 +49,12 @@ func init() {
 	rootCmd.Flags().StringVarP(&flags.ContentLength, "content-length", "", "-1", "Display the specific content length e.g. 120-560")
 	rootCmd.Flags().StringVarP(&flags.NoContentLength, "hide-content-length", "", "-1", "Not display given content length e.g. 320")
 	rootCmd.Flags().StringVarP(&flags.Cookie, "cookie", "C", "", "Custom cookie e.g. \"name1=value1; name2=value2\"")
+	rootCmd.Flags().BoolVarP(&flags.FollowRedirect, "follow-redirect", "f", false, "Follow redirects")
 	rootCmd.Flags().StringVarP(&flags.Header, "header", "H", "", "Custom header e.g. \"Authorization: Bearer <token>; Host: example.com\"")
 	rootCmd.Flags().StringVarP(&flags.Method, "method", "M", "GET", "Specific method e.g. GET, POST, PUT, OPTIONS, etc.")
 	rootCmd.Flags().StringVarP(&flags.PostData, "post-data", "", "", "POST request with data e.g. \"username=admin&password=EGG\"")
 	rootCmd.Flags().StringVarP(&flags.Rate, "rate", "", "0", "Rate limiting per requests e.g. 1.2. Or random rate e.g. 0.8-1.5")
+	rootCmd.Flags().BoolVarP(&flags.Recursion, "recursion", "r", false, "Enable a recursive brute force")
 	rootCmd.Flags().IntSliceVarP(&flags.Status, "status", "s", []int{200, 204, 301, 302, 307, 401, 403}, "Display given status codes only.")
 	rootCmd.Flags().IntSliceVarP(&flags.HideStatus, "hide-status", "", []int{}, "Not display given status codes.")
 	rootCmd.Flags().IntVarP(&flags.Threads, "threads", "t", 20, "Number of concurrent threads.")
@@ -72,15 +74,15 @@ func init() {
 
 		var s []string
 		s = append(s, fmt.Sprintf("%s\n\n", libhelpers.LOGO))
-		s = append(s, fmt.Sprintf("%-10s\t\t%t\n", "Output Color:", flags.Color))
-		s = append(s, fmt.Sprintf("%-10s\t\t%s\n", "URL:", flags.Url))
-		s = append(s, fmt.Sprintf("%-10s\t\t%s\n", "Wordlist:", flags.Wordlist))
-		s = append(s, fmt.Sprintf("%-10s\t\t%s\n", "Method:", flags.Method))
+		s = append(s, fmt.Sprintf("%-20s\t\t%t\n", "Output Color:", flags.Color))
+		s = append(s, fmt.Sprintf("%-20s\t\t%s\n", "URL:", flags.Url))
+		s = append(s, fmt.Sprintf("%-20s\t\t%s\n", "Wordlist:", flags.Wordlist))
+		s = append(s, fmt.Sprintf("%-20s\t\t%s\n", "Method:", flags.Method))
 		if len(flags.Header) > 0 {
-			s = append(s, fmt.Sprintf("%-10s\t\t%s\n", "Header:", flags.Header))
+			s = append(s, fmt.Sprintf("%-20s\t\t%s\n", "Header:", flags.Header))
 		}
 		if len(flags.Cookie) > 0 {
-			s = append(s, fmt.Sprintf("%-10s\t\t%s\n", "Cookie:", flags.Cookie))
+			s = append(s, fmt.Sprintf("%-20s\t\t%s\n", "Cookie:", flags.Cookie))
 		}
 		if len(flags.HideStatus) > 0 {
 			for _, noStatus := range flags.HideStatus {
@@ -92,18 +94,20 @@ func init() {
 				}
 			}
 		}
-		s = append(s, fmt.Sprintf("%-10s\t\t%v\n", "Status:", strings.Trim(strings.Replace(fmt.Sprint(flags.Status), " ", ",", -1), "[]")))
+		s = append(s, fmt.Sprintf("%-20s\t\t%v\n", "Status:", strings.Trim(strings.Replace(fmt.Sprint(flags.Status), " ", ",", -1), "[]")))
 		cl, _ := strconv.Atoi(flags.ContentLength)
 		if cl >= 0 {
-			s = append(s, fmt.Sprintf("%-10s\t\t%s\n", "Content Length:", flags.ContentLength))
+			s = append(s, fmt.Sprintf("%-20s\t\t%s\n", "Content Length:", flags.ContentLength))
 		}
 		ncl, _ := strconv.Atoi(flags.NoContentLength)
 		if ncl >= 0 {
-			s = append(s, fmt.Sprintf("%-10s\t\t%s\n", "No Content Length:", flags.NoContentLength))
+			s = append(s, fmt.Sprintf("%-20s\t\t%s\n", "No Content Length:", flags.NoContentLength))
 		}
-		s = append(s, fmt.Sprintf("%-10s\t\t%d\n", "Threads: ", flags.Threads))
-		s = append(s, fmt.Sprintf("%-10s\t\t%s\n", "Rate: ", flags.Rate))
-		s = append(s, fmt.Sprintf("%-10s\t\t%t\n", "Verbose:", flags.Verbose))
+		s = append(s, fmt.Sprintf("%-20s\t\t%d\n", "Threads: ", flags.Threads))
+		s = append(s, fmt.Sprintf("%-20s\t\t%s\n", "Rate: ", flags.Rate))
+		s = append(s, fmt.Sprintf("%-20s\t\t%t\n", "Follow redirect: ", flags.FollowRedirect))
+		s = append(s, fmt.Sprintf("%-20s\t\t%t\n", "Recursion: ", flags.Recursion))
+		s = append(s, fmt.Sprintf("%-20s\t\t%t\n", "Verbose:", flags.Verbose))
 		s = append(s, fmt.Sprintf("%s\n\n", libhelpers.BAR_DOUBLE_L))
 
 		for _, v := range s {
