@@ -1,10 +1,13 @@
-package libcmd
+package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
+
+const Version = "0.1.2"
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
@@ -12,8 +15,9 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version of fuzzagotchi",
+	Short: "Print the version of Fuzzagotchi",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Fuzzagotchi version %s\n", rootCmd.Version)
+		fmt.Printf("Fuzzagotchi v%s\n", Version)
+		os.Exit(0)
 	},
 }

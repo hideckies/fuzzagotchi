@@ -1,4 +1,4 @@
-package libhelpers
+package helper
 
 import (
 	"strings"

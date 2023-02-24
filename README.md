@@ -14,8 +14,7 @@ A fuzzing tool written in Go. It helps to discover directories, files, parameter
 
 ## Example
 
-Fuzzagotchi uses "EGG" keyword for fuzzing.  
-As you may have noticed, it imitates **FFUF**ツ
+Fuzzagotchi uses **"EGG"** keyword for fuzzing.  
 
 ```sh
 fuzzagotchi -u https://example.com/EGG -w wordlist.txt

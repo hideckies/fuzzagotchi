@@ -1,4 +1,4 @@
-package libgotchi
+package fuzzer
 
 import (
 	"fmt"
@@ -9,11 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hideckies/fuzzagotchi/libhelpers"
+	"github.com/fatih/color"
+	"github.com/hideckies/fuzzagotchi/pkg/output"
 )
 
-func NewRate(rateStr string) time.Duration {
-	var rate time.Duration
+// Get accurate delay from flag value
+func getDelay(rateStr string) time.Duration {
+	var delay time.Duration
 
 	r, _ := regexp.Compile("[+]?([0-9]*[.])?[0-9]+")
 	rrange, _ := regexp.Compile("([+]?([0-9]*[.])?[0-9]+)-([+]?([0-9]*[.])?[0-9]+)")
@@ -23,32 +25,32 @@ func NewRate(rateStr string) time.Duration {
 		dmin, _ := strconv.ParseFloat(durations[0], 64)
 		dmax, _ := strconv.ParseFloat(durations[1], 64)
 		if dmin > dmax {
-			fmt.Println(ERROR_RATE)
+			color.Red(output.ERROR_DELAY)
 			os.Exit(0)
 		} else if dmin == dmax {
 			s := fmt.Sprintf("%fs", dmin)
-			rate, _ = time.ParseDuration(s)
+			delay, _ = time.ParseDuration(s)
 		} else if dmin < dmax {
 			drand := dmin + rand.Float64()*(dmax-dmin)
 			s := fmt.Sprintf("%fs", drand)
-			rate, _ = time.ParseDuration(s)
+			delay, _ = time.ParseDuration(s)
 		} else {
-			fmt.Println(ERROR_RATE)
+			color.Red(output.ERROR_DELAY)
 			os.Exit(0)
 		}
 	} else if r.MatchString(rateStr) {
 		s := fmt.Sprintf("%vs", rateStr)
-		rate, _ = time.ParseDuration(s)
+		delay, _ = time.ParseDuration(s)
 	} else {
-		fmt.Println(ERROR_RATE)
+		color.Red(output.ERROR_DELAY)
 		os.Exit(0)
 	}
 
-	return rate
+	return delay
 }
 
-func ValidateFlagRate(flags libhelpers.Flags) bool {
-	rate := flags.Rate
-	_ = rate
-	return true
-}
+// func ValidateFlagRate(flags helper.Flags) bool {
+// 	rate := flags.Rate
+// 	_ = rate
+// 	return true
+// }
