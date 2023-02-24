@@ -115,7 +115,7 @@ func init() {
 	rootCmd.Flags().IntVarP(&Options.Timeout, "timeout", "", 10, "")
 	rootCmd.Flags().StringVarP(&Options.UserAgent, "user-agent", "", "Fuzzagotchi", "")
 
-	rootCmd.Flags().IntSliceVarP(&Options.MatchStatus, "match-status", "", []int{200, 204, 301, 302, 307, 401, 403}, "")
+	rootCmd.Flags().IntSliceVarP(&Options.MatchStatus, "match-status", "", []int{200, 204, 301, 302, 307, 401, 403, 500}, "")
 	rootCmd.Flags().StringVarP(&Options.MatchLength, "match-length", "", "-1", "")
 	rootCmd.Flags().IntSliceVarP(&Options.HideStatus, "hide-status", "", []int{}, "")
 	rootCmd.Flags().StringVarP(&Options.HideLength, "hide-length", "", "-1", "")
