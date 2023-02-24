@@ -30,8 +30,6 @@ func NewResponse(resp *http.Response, req *Request, word string) Response {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err == nil {
 		newResp.Body = string(body)
-	} else {
-		panic(err)
 	}
 	return newResp
 }
