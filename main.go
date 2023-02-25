@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/hideckies/fuzzagotchi/cmd"
@@ -43,7 +45,14 @@ func main() {
 
 	output.Banner(cmd.Options)
 
+	// Count the number of words
+	wordlist, err := ioutil.ReadFile(cmd.Options.Wordlist)
+	if err != nil {
+		panic(err)
+	}
+	totalWords := len(strings.Split(string(wordlist), "\n"))
+
 	// Create a new Fuzzer and start fuzzing
-	fuzzer := fuzzer.NewFuzzer(cmd.Options, ctx)
+	fuzzer := fuzzer.NewFuzzer(ctx, cmd.Options, totalWords)
 	fuzzer.Run()
 }

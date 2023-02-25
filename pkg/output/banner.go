@@ -7,6 +7,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/hideckies/fuzzagotchi/cmd"
+	"github.com/hideckies/fuzzagotchi/pkg/util"
 )
 
 const (
@@ -40,6 +41,7 @@ func Banner(options cmd.CmdOptions) {
 	}
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Threads"), color.CyanString("%d", options.Threads))
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Delay"), color.CyanString(options.Delay))
+	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Status Code"), color.CyanString("%s", util.IntJoin(options.StatusCode, ",")))
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Follow Redirect"), color.CyanString("%t", options.FollowRedirect))
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Recursion"), color.CyanString("%t", options.Recursion))
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Verbose"), color.CyanString("%t", options.Verbose))

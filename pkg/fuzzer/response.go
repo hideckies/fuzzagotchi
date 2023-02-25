@@ -1,13 +1,13 @@
 package fuzzer
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 )
 
 type Response struct {
-	Body          string            `json:"body"`
+	Body          io.Reader         `json:"body"`
 	Config        Config            `json:"config"`
 	ContentLength int               `json:"content_length"`
 	Headers       map[string]string `json:"headers"`
@@ -18,7 +18,10 @@ type Response struct {
 }
 
 func NewResponse(resp *http.Response, req *Request, word string) Response {
+	defer resp.Body.Close()
+
 	var newResp Response
+	newResp.Body = resp.Body
 	newResp.Config = req.Config
 	newResp.ContentLength = int(resp.ContentLength)
 	newResp.Headers = make(map[string]string)
@@ -27,10 +30,14 @@ func NewResponse(resp *http.Response, req *Request, word string) Response {
 	newResp.StatusCode = resp.StatusCode
 	newResp.Word = word
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err == nil {
-		newResp.Body = string(body)
-	}
+	// var body []byte
+	// length, _ := io.Copy(io.Discard, resp.Body)
+
+	// _, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
 	return newResp
 }
 

@@ -14,7 +14,7 @@ An automatic web fuzzer.
 
 ## Usage
 
-### Automatic Fuzzing
+### Automatic Fuzzing (Under development)
 
 ```sh
 fuzzagotchi -u https://example.com -w wordlist.txt

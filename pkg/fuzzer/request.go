@@ -94,8 +94,6 @@ func NewRequest(conf Config) Request {
 }
 
 func (req *Request) Send(word string) (Response, error) {
-	// var resp Response
-
 	req.Host = strings.ReplaceAll(req.Host, "EGG", word)
 	req.Method = strings.ReplaceAll(req.Method, "EGG", word)
 	postdata := []byte(strings.ReplaceAll(string(req.Config.PostData), "EGG", word))
@@ -136,5 +134,6 @@ func (req *Request) Send(word string) (Response, error) {
 	defer tmpResp.Body.Close()
 
 	resp := NewResponse(tmpResp, req, word)
+	// resp := Response{}
 	return resp, nil
 }
