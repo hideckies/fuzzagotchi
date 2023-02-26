@@ -24,12 +24,13 @@ type Request struct {
 	UserAgent string            `json:"user_agent"`
 }
 
+// Initialize Request
 func NewRequest(conf Config) Request {
 	var req Request
 	req.Config = conf
 	req.Cookies = make(map[string]string)
 	req.Headers = make(map[string]string)
-	req.Host = ""
+	req.Host = conf.Host
 	req.Method = conf.Method
 	postdata := []byte(conf.PostData)
 	req.PostData = bytes.NewReader(postdata)
@@ -37,7 +38,7 @@ func NewRequest(conf Config) Request {
 	req.URL = conf.URL
 	req.UserAgent = conf.UserAgent
 
-	// // Update headers
+	// Set headers
 	if len(conf.Header) > 0 {
 		headers := strings.Split(conf.Header, ";")
 		for _, v := range headers {
@@ -57,7 +58,7 @@ func NewRequest(conf Config) Request {
 		req.Headers["Connection"] = "Keep-Alive"
 	}
 
-	// // Update cookies
+	// Set cookies
 	if len(conf.Cookie) > 0 {
 		cookies := strings.Split(conf.Cookie, ";")
 		for _, v := range cookies {
@@ -93,30 +94,41 @@ func NewRequest(conf Config) Request {
 	return req
 }
 
+// Sent request
 func (req *Request) Send(word string) (Response, error) {
-	req.Host = strings.ReplaceAll(req.Host, "EGG", word)
-	req.Method = strings.ReplaceAll(req.Method, "EGG", word)
-	postdata := []byte(strings.ReplaceAll(string(req.Config.PostData), "EGG", word))
-	req.PostData = bytes.NewReader(postdata)
-	if len(postdata) > 0 {
-		req.Method = "POST"
+	newReqHeaders := req.Headers
+	newReqMethod := strings.ReplaceAll(req.Method, "EGG", word)
+	newReqCookies := req.Cookies
+	tmpPostData := []byte(strings.ReplaceAll(string(req.Config.PostData), "EGG", word))
+	newReqPostData := bytes.NewReader(tmpPostData)
+	if len(tmpPostData) > 0 {
+		newReqMethod = "POST"
 	}
-	req.URL = strings.ReplaceAll(req.URL, "EGG", word)
+	newReqURL := strings.ReplaceAll(req.URL, "EGG", word)
 
-	newReq, err := http.NewRequest(req.Method, req.URL, req.PostData)
+	// Initialize a new http request
+	newReq, err := http.NewRequest(newReqMethod, newReqURL, newReqPostData)
 	if err != nil {
 		return errorResponse(req, word), err
 	}
 
-	// Set Headers
-	for key, val := range req.Headers {
+	// Update Headers (also Host)
+	for key, val := range newReqHeaders {
 		// Replace EGG to word
 		key = strings.ReplaceAll(key, "EGG", word)
 		val = strings.ReplaceAll(val, "EGG", word)
 		newReq.Header.Set(key, val)
+
+		// If "Host" header exists, update newReq.Host
+		if key == "Host" {
+			newReq.Host = val
+		}
 	}
-	// Set Cookies
-	for key, val := range req.Cookies {
+	if newReq.Header.Get("Content-Type") == "" {
+		newReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+	// Update Cookies
+	for key, val := range newReqCookies {
 		// Replace EGG to word
 		key = strings.ReplaceAll(key, "EGG", word)
 		val = strings.ReplaceAll(val, "EGG", word)
@@ -134,6 +146,5 @@ func (req *Request) Send(word string) (Response, error) {
 	defer tmpResp.Body.Close()
 
 	resp := NewResponse(tmpResp, req, word)
-	// resp := Response{}
 	return resp, nil
 }
