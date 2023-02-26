@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
@@ -15,27 +16,28 @@ import (
 	"github.com/hideckies/fuzzagotchi/cmd"
 	"github.com/hideckies/fuzzagotchi/pkg/output"
 	"github.com/hideckies/fuzzagotchi/pkg/util"
-	"github.com/schollz/progressbar/v3"
 
 	"github.com/fatih/color"
 )
 
 type Config struct {
-	Context    context.Context `json:"context"`
-	Cookie     string          `json:"cookie"`
-	Delay      string          `json:"delay"`
-	EGG        bool            `json:"egg"`
-	Header     string          `json:"header"`
-	Method     string          `json:"method"`
-	PostData   string          `json:"post_data"`
-	Retry      int             `json:"retry"`
-	StatusCode []int           `json:"match_status"`
-	Threads    int             `json:"threads"`
-	Timeout    int             `json:"timeout"`
-	URL        string          `json:"url"`
-	UserAgent  string          `json:"user_agent"`
-	Verbose    bool            `json:"verbose"`
-	Wordlist   string          `json:"wordlist"`
+	ContentLength string          `json:"content_length"`
+	Context       context.Context `json:"context"`
+	Cookie        string          `json:"cookie"`
+	Delay         string          `json:"delay"`
+	EGG           bool            `json:"egg"`
+	Header        string          `json:"header"`
+	Host          string          `json:"host"`
+	Method        string          `json:"method"`
+	PostData      string          `json:"post_data"`
+	Retry         int             `json:"retry"`
+	StatusCode    []int           `json:"match_status"`
+	Threads       int             `json:"threads"`
+	Timeout       int             `json:"timeout"`
+	URL           string          `json:"url"`
+	UserAgent     string          `json:"user_agent"`
+	Verbose       bool            `json:"verbose"`
+	Wordlist      string          `json:"wordlist"`
 }
 
 type Fuzzer struct {
@@ -43,7 +45,8 @@ type Fuzzer struct {
 	Request   Request    `json:"request"`
 	Responses []Response `json:"response"`
 
-	TotalWords int `json:"total_words"`
+	TotalWords int      `json:"total_words"`
+	ErrorWords []string `json:"error_words"`
 
 	// mu *sync.Mutex `json:"-"`
 }
@@ -58,24 +61,27 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, totalWords int) Fuzz
 	}
 
 	f.Config = Config{
-		Cookie:     options.Cookie,
-		Context:    ctx,
-		Delay:      options.Delay,
-		EGG:        egg,
-		Header:     options.Header,
-		Method:     options.Method,
-		PostData:   options.PostData,
-		Retry:      options.Retry,
-		StatusCode: options.StatusCode,
-		Threads:    options.Threads,
-		Timeout:    options.Timeout,
-		URL:        options.URL,
-		UserAgent:  options.UserAgent,
-		Verbose:    options.Verbose,
-		Wordlist:   options.Wordlist,
+		ContentLength: options.ContentLength,
+		Cookie:        options.Cookie,
+		Context:       ctx,
+		Delay:         options.Delay,
+		EGG:           egg,
+		Header:        options.Header,
+		Host:          extractHost(options.URL),
+		Method:        options.Method,
+		PostData:      options.PostData,
+		Retry:         options.Retry,
+		StatusCode:    options.StatusCode,
+		Threads:       options.Threads,
+		Timeout:       options.Timeout,
+		URL:           options.URL,
+		UserAgent:     options.UserAgent,
+		Verbose:       options.Verbose,
+		Wordlist:      options.Wordlist,
 	}
-	f.Request = Request{}
+	f.Request = NewRequest(f.Config)
 	f.TotalWords = totalWords
+	f.ErrorWords = make([]string, 0)
 	return f
 }
 
@@ -96,11 +102,10 @@ func (f *Fuzzer) Run() {
 	scanner.Split(bufio.ScanLines)
 
 	wordCh := make(chan string, f.Config.Threads)
-	respCh := make(chan Response, f.Config.Threads)
 
 	for i := 0; i < f.Config.Threads; i++ {
 		wg.Add(1)
-		go f.worker(&wg, i, wordCh, respCh, bar)
+		go f.worker(&wg, i, wordCh)
 	}
 
 	for scanner.Scan() {
@@ -108,23 +113,16 @@ func (f *Fuzzer) Run() {
 		wordCh <- scanner.Text()
 	}
 
-	for len(respCh) > 0 {
-		r := <-respCh
-		f.addResponse(r)
-	}
-
 	bar.Close()
+	close(wordCh)
+	wg.Wait()
 
 	// Output result
 	f.output()
-
-	close(wordCh)
-	wg.Wait()
-	close(respCh)
 }
 
 // Worker to fuzz using given word
-func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string, respCh chan Response, bar progressbar.ProgressBar) {
+func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string) {
 	defer wg.Done()
 
 	for word := range wordCh {
@@ -134,8 +132,6 @@ func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string, respCh c
 				fmt.Println(err)
 			}
 		}
-		// respCh <- resp
-
 		f.addResponse(resp)
 		time.Sleep(getDelay(f.Config.Delay))
 	}
@@ -143,27 +139,25 @@ func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string, respCh c
 
 // Process to send a request
 func (f *Fuzzer) process(word string, n int) (Response, error) {
-	req := NewRequest(f.Config)
-	// Send request
-	resp, err := req.Send(word)
-	if err != nil {
-		if f.Config.Verbose {
-			color.Red("%-10s\t\tError: %s\n", word, err)
-		}
-		// Retry to send a request until reaching the retry limit.
-		// if f.Config.Retry > n {
-		// 	time.Sleep(getDelay(f.Config.Delay))
-		// 	resp, err := f.process(word, n+1)
-		// }
-		// return Response{}, fmt.Errorf("%s", err)
-	}
+	var resp Response
+	var err error
 
+	cnt := 0
+	ok := false
+	for !ok && cnt <= f.Config.Retry {
+		resp, err = f.Request.Send(word)
+		if err == nil {
+			ok = true
+		}
+		time.Sleep(getDelay(f.Config.Delay))
+		cnt++
+	}
 	return resp, nil
 }
 
 // Adjust response
 func (f *Fuzzer) addResponse(resp Response) {
-	if util.ContainInt(f.Config.StatusCode, resp.StatusCode) && resp.ContentLength >= 0 {
+	if util.ContainInt(f.Config.StatusCode, resp.StatusCode) && resp.ContentLength >= 0 && f.matchContentLength(resp.ContentLength) {
 		f.Responses = append(f.Responses, resp)
 	}
 }
@@ -182,13 +176,6 @@ func (f *Fuzzer) output() {
 		color.HiMagentaString("Content Length"))
 	fmt.Fprintf(tw, "%s\n", color.YellowString(output.TMPL_BAR_SINGLE_M))
 
-	// result := color.CyanString(
-	// 	"%-10s\t\tStatus: %d, Content Length: %d, Duration: %.2fs",
-	// 	resp.Word,
-	// 	resp.StatusCode,
-	// 	resp.ContentLength,
-	// 	resp.Delay.Abs().Seconds())
-
 	for _, resp := range f.Responses {
 		fmt.Fprintf(tw,
 			"%s\t%s\t%s\n",
@@ -196,40 +183,14 @@ func (f *Fuzzer) output() {
 			color.YellowString("%d", resp.StatusCode),
 			color.HiMagentaString("%d", resp.ContentLength))
 	}
+}
 
-	// rcl, _ := regexp.Compile("^([1-9][0-9]*|0)$")
-	// rclrange, _ := regexp.Compile("^(([1-9][0-9]*|0)-([1-9][0-9]*|0))$")
+// Extract hostname from URL
+func extractHost(_url string) string {
+	u, err := url.Parse(_url)
 
-	// if rcl.MatchString(resp.Config.NoContentLength) {
-	// 	ncl, _ := strconv.Atoi(resp.Config.NoContentLength)
-	// 	if util.ContainInt(resp.Config.Status, resp.StatusCode) && ncl != resp.ContentLength {
-	// 		fmt.Println(result)
-	// 	} else if resp.Config.Verbose {
-	// 		fmt.Println(resultFailed)
-	// 	}
-	// } else {
-	// 	if rclrange.MatchString(resp.Config.ContentLength) {
-	// 		contentlengths := strings.Split(resp.ContentLength, "-")
-	// 		cmin, _ := strconv.Atoi(contentlengths[0])
-	// 		cmax, _ := strconv.Atoi(contentlengths[1])
-	// 		if util.ContainInt(resp.Status, resp.StatusCode) && (cmin <= resp.ContentLength && resp.ContentLength <= cmax) {
-	// 			fmt.Println(result)
-	// 		} else if resp.Config.Verbose {
-	// 			fmt.Println(resultFailed)
-	// 		}
-	// 	} else if rcl.MatchString(resp.Config.ContentLength) {
-	// 		cl, _ := strconv.Atoi(resp.Config.ContentLength)
-	// 		if util.ContainInt(resp.Config.Status, resp.StatusCode) && cl == resp.ContentLength {
-	// 			fmt.Println(result)
-	// 		} else if resp.Config.Verbose {
-	// 			fmt.Println(resultFailed)
-	// 		}
-	// 	} else {
-	// 		if util.ContainInt(resp.Config.Status, resp.StatusCode) {
-	// 			fmt.Println(result)
-	// 		} else if resp.Config.Verbose {
-	// 			fmt.Println(resultFailed)
-	// 		}
-	// 	}
-	// }
+	if err != nil {
+		return ""
+	}
+	return u.Hostname()
 }

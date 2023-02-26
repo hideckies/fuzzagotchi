@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"strings"
@@ -46,7 +45,7 @@ func main() {
 	output.Banner(cmd.Options)
 
 	// Count the number of words
-	wordlist, err := ioutil.ReadFile(cmd.Options.Wordlist)
+	wordlist, err := os.ReadFile(cmd.Options.Wordlist)
 	if err != nil {
 		panic(err)
 	}

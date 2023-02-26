@@ -95,7 +95,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&Options.Wordlist, "wordlist", "w", "", "")
 	rootCmd.MarkFlagRequired("wordlist")
 
-	rootCmd.Flags().StringVarP(&Options.Method, "method", "M", "GET", "")
+	rootCmd.Flags().StringVarP(&Options.Method, "method", "X", "GET", "")
 	rootCmd.Flags().StringVarP(&Options.Header, "header", "H", "", "")
 	rootCmd.Flags().StringVarP(&Options.Cookie, "cookie", "C", "", "")
 	rootCmd.Flags().StringVarP(&Options.PostData, "post-data", "d", "", "")
@@ -109,7 +109,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&Options.UserAgent, "user-agent", "", "Fuzzagotchi", "")
 
 	rootCmd.Flags().IntSliceVarP(&Options.StatusCode, "status-code", "", []int{200, 204, 301, 302, 307, 401, 403, 500}, "")
-	rootCmd.Flags().StringVarP(&Options.ContentLength, "content-length", "", "-1", "")
+	rootCmd.Flags().StringVarP(&Options.ContentLength, "content-length", "", "", "")
 
 	rootCmd.Flags().BoolVarP(&Options.NoColor, "no-color", "", false, "")
 	rootCmd.Flags().BoolVarP(&Options.Verbose, "verbose", "v", false, "")
