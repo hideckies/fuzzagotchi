@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/fatih/color v1.13.0
-	github.com/gosuri/uilive v0.0.4
 	github.com/schollz/progressbar/v3 v3.13.0
 )
 

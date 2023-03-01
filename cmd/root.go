@@ -38,7 +38,7 @@ FUZZER OPTIONS:
   -r, --recursion        Enable resursive brute force (default: false)
   -t, --threads          Number of threads (default: 10)
       --timeout          Request timeout in seconds (default: 10)
-	  --user-agent       Specific User-Agent
+      --user-agent       Specific User-Agent
   
       --status-code       Display given status code only.
       --content-length    Display given content-length e.g. 120-560

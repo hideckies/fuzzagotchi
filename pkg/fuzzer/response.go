@@ -7,36 +7,41 @@ import (
 )
 
 type Response struct {
-	Body          io.Reader         `json:"body"`
+	Body          []byte            `json:"body"`
 	Config        Config            `json:"config"`
 	ContentLength int               `json:"content_length"`
-	Headers       map[string]string `json:"headers"`
 	Delay         time.Duration     `json:"delay"`
+	Headers       map[string]string `json:"headers"`
+	Path          string            `json:"path"`
+	RedirectPath  string            `json:"redirect_path"`
 	Status        string            `json:"status"`
 	StatusCode    int               `json:"status_code"`
 	Word          string            `json:"word"`
 }
 
-func NewResponse(resp *http.Response, req *Request, word string) Response {
-	defer resp.Body.Close()
-
+func NewResponse(resp *http.Response, req *Request, word string, redirectUrl string) Response {
 	var newResp Response
-	newResp.Body = resp.Body
+	newResp.Body = make([]byte, 0)
 	newResp.Config = req.Config
 	newResp.ContentLength = int(resp.ContentLength)
-	newResp.Headers = make(map[string]string)
 	newResp.Delay = req.Delay
+	newResp.Headers = make(map[string]string)
+	newResp.Path = resp.Request.URL.Path
+	newResp.RedirectPath = redirectUrl
 	newResp.Status = resp.Status
 	newResp.StatusCode = resp.StatusCode
 	newResp.Word = word
 
-	// var body []byte
-	// length, _ := io.Copy(io.Discard, resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		newResp.Body = make([]byte, 0)
+	} else {
+		newResp.Body = body
+	}
 
-	// _, err := io.ReadAll(resp.Body)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
+	if newResp.ContentLength < 0 {
+		newResp.ContentLength = len(body)
+	}
 
 	return newResp
 }
