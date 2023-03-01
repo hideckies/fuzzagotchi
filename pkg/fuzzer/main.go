@@ -10,34 +10,34 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"text/tabwriter"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/hideckies/fuzzagotchi/cmd"
 	"github.com/hideckies/fuzzagotchi/pkg/output"
 	"github.com/hideckies/fuzzagotchi/pkg/util"
-
-	"github.com/fatih/color"
+	"github.com/schollz/progressbar/v3"
 )
 
 type Config struct {
-	ContentLength string          `json:"content_length"`
-	Context       context.Context `json:"context"`
-	Cookie        string          `json:"cookie"`
-	Delay         string          `json:"delay"`
-	EGG           bool            `json:"egg"`
-	Header        string          `json:"header"`
-	Host          string          `json:"host"`
-	Method        string          `json:"method"`
-	PostData      string          `json:"post_data"`
-	Retry         int             `json:"retry"`
-	StatusCode    []int           `json:"match_status"`
-	Threads       int             `json:"threads"`
-	Timeout       int             `json:"timeout"`
-	URL           string          `json:"url"`
-	UserAgent     string          `json:"user_agent"`
-	Verbose       bool            `json:"verbose"`
-	Wordlist      string          `json:"wordlist"`
+	ContentLength  string          `json:"content_length"`
+	Context        context.Context `json:"context"`
+	Cookie         string          `json:"cookie"`
+	Delay          string          `json:"delay"`
+	FollowRedirect bool            `json:"follow_redirect"`
+	EGG            bool            `json:"egg"`
+	Header         string          `json:"header"`
+	Host           string          `json:"host"`
+	Method         string          `json:"method"`
+	PostData       string          `json:"post_data"`
+	Retry          int             `json:"retry"`
+	StatusCode     []int           `json:"match_status"`
+	Threads        int             `json:"threads"`
+	Timeout        int             `json:"timeout"`
+	URL            string          `json:"url"`
+	UserAgent      string          `json:"user_agent"`
+	Verbose        bool            `json:"verbose"`
+	Wordlist       string          `json:"wordlist"`
 }
 
 type Fuzzer struct {
@@ -61,25 +61,28 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, totalWords int) Fuzz
 	}
 
 	f.Config = Config{
-		ContentLength: options.ContentLength,
-		Cookie:        options.Cookie,
-		Context:       ctx,
-		Delay:         options.Delay,
-		EGG:           egg,
-		Header:        options.Header,
-		Host:          extractHost(options.URL),
-		Method:        options.Method,
-		PostData:      options.PostData,
-		Retry:         options.Retry,
-		StatusCode:    options.StatusCode,
-		Threads:       options.Threads,
-		Timeout:       options.Timeout,
-		URL:           options.URL,
-		UserAgent:     options.UserAgent,
-		Verbose:       options.Verbose,
-		Wordlist:      options.Wordlist,
+		ContentLength:  options.ContentLength,
+		Cookie:         options.Cookie,
+		Context:        ctx,
+		Delay:          options.Delay,
+		EGG:            egg,
+		FollowRedirect: options.FollowRedirect,
+		Header:         options.Header,
+		Host:           extractHost(options.URL),
+		Method:         options.Method,
+		PostData:       options.PostData,
+		Retry:          options.Retry,
+		StatusCode:     options.StatusCode,
+		Threads:        options.Threads,
+		Timeout:        options.Timeout,
+		URL:            options.URL,
+		UserAgent:      options.UserAgent,
+		Verbose:        options.Verbose,
+		Wordlist:       options.Wordlist,
 	}
 	f.Request = NewRequest(f.Config)
+	f.Responses = make([]Response, 0)
+	// f.ResponsePool = make([]Response, 0)
 	f.TotalWords = totalWords
 	f.ErrorWords = make([]string, 0)
 	return f
@@ -89,6 +92,10 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, totalWords int) Fuzz
 func (f *Fuzzer) Run() {
 	runtime.GOMAXPROCS(f.Config.Threads)
 	var wg sync.WaitGroup
+
+	fmt.Printf("%s\n", color.YellowString(output.TMPL_BAR_DOUBLE_M))
+	fmt.Printf("%s %s\n", color.CyanString("+"), color.CyanString("FUZZING DIRECTORIES"))
+	fmt.Printf("%s\n", color.YellowString(output.TMPL_BAR_DOUBLE_M))
 
 	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...")
 
@@ -105,7 +112,7 @@ func (f *Fuzzer) Run() {
 
 	for i := 0; i < f.Config.Threads; i++ {
 		wg.Add(1)
-		go f.worker(&wg, i, wordCh)
+		go f.worker(&wg, i, wordCh, bar)
 	}
 
 	for scanner.Scan() {
@@ -117,12 +124,15 @@ func (f *Fuzzer) Run() {
 	close(wordCh)
 	wg.Wait()
 
-	// Output result
-	f.output()
+	fmt.Println()
+
+	// Finding information in each page
+	// explore := NewExplore(f.Responses)
+	// explore.explore()
 }
 
 // Worker to fuzz using given word
-func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string) {
+func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string, bar progressbar.ProgressBar) {
 	defer wg.Done()
 
 	for word := range wordCh {
@@ -132,7 +142,10 @@ func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string) {
 				fmt.Println(err)
 			}
 		}
-		f.addResponse(resp)
+		if f.matcher(resp) {
+			f.Responses = append(f.Responses, resp)
+			f.output(resp, bar)
+		}
 		time.Sleep(getDelay(f.Config.Delay))
 	}
 }
@@ -155,33 +168,29 @@ func (f *Fuzzer) process(word string, n int) (Response, error) {
 	return resp, nil
 }
 
-// Adjust response
-func (f *Fuzzer) addResponse(resp Response) {
+// Check if the response matches rules
+func (f *Fuzzer) matcher(resp Response) bool {
 	if util.ContainInt(f.Config.StatusCode, resp.StatusCode) && resp.ContentLength >= 0 && f.matchContentLength(resp.ContentLength) {
-		f.Responses = append(f.Responses, resp)
+		return true
 	}
+	return false
 }
 
 // Print results
-func (f *Fuzzer) output() {
-	tw := tabwriter.NewWriter(os.Stdout, 0, 1, 1, ' ', tabwriter.TabIndent)
-	defer tw.Flush()
+func (f *Fuzzer) output(resp Response, bar progressbar.ProgressBar) {
+	bar.Clear()
 
-	fmt.Fprintf(tw, "%s\n", color.YellowString(output.TMPL_BAR_SINGLE_M))
-	fmt.Fprintf(tw,
-		"%s %s\t%s\t%s\n",
-		color.CyanString("+"),
-		color.CyanString("WORD"),
-		color.YellowString("Status Code"),
-		color.HiMagentaString("Content Length"))
-	fmt.Fprintf(tw, "%s\n", color.YellowString(output.TMPL_BAR_SINGLE_M))
+	result := fmt.Sprintf("%-23s %s%s %s%s",
+		color.CyanString(resp.Path),
+		color.YellowString("("),
+		color.GreenString("status: %d", resp.StatusCode),
+		color.HiMagentaString("length: %d", resp.ContentLength),
+		color.YellowString(")"))
 
-	for _, resp := range f.Responses {
-		fmt.Fprintf(tw,
-			"%s\t%s\t%s\n",
-			color.CyanString(resp.Word),
-			color.YellowString("%d", resp.StatusCode),
-			color.HiMagentaString("%d", resp.ContentLength))
+	if resp.RedirectPath != "" {
+		fmt.Printf("%s -> %s\n", result, color.GreenString(resp.RedirectPath))
+	} else {
+		fmt.Printf("%s\n", result)
 	}
 }
 

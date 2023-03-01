@@ -11,17 +11,18 @@ import (
 )
 
 type Request struct {
-	Client    *http.Client      `json:"client"`
-	Config    Config            `json:"config"`
-	Cookies   map[string]string `json:"cookies"`
-	Data      []byte            `json:"data"`
-	Delay     time.Duration     `json:"delay"`
-	Headers   map[string]string `json:"headers"`
-	Host      string            `json:"host"`
-	Method    string            `json:"method"`
-	PostData  io.Reader         `json:"post_data"`
-	URL       string            `json:"url"`
-	UserAgent string            `json:"user_agent"`
+	Client         *http.Client      `json:"client"`
+	Config         Config            `json:"config"`
+	Cookies        map[string]string `json:"cookies"`
+	Data           []byte            `json:"data"`
+	Delay          time.Duration     `json:"delay"`
+	FollowRedirect bool              `json:"follow_redirect"`
+	Headers        map[string]string `json:"headers"`
+	Host           string            `json:"host"`
+	Method         string            `json:"method"`
+	PostData       io.Reader         `json:"post_data"`
+	URL            string            `json:"url"`
+	UserAgent      string            `json:"user_agent"`
 }
 
 // Initialize Request
@@ -29,12 +30,13 @@ func NewRequest(conf Config) Request {
 	var req Request
 	req.Config = conf
 	req.Cookies = make(map[string]string)
+	req.Delay = getDelay(conf.Delay)
+	req.FollowRedirect = conf.FollowRedirect
 	req.Headers = make(map[string]string)
 	req.Host = conf.Host
 	req.Method = conf.Method
 	postdata := []byte(conf.PostData)
 	req.PostData = bytes.NewReader(postdata)
-	req.Delay = getDelay(conf.Delay)
 	req.URL = conf.URL
 	req.UserAgent = conf.UserAgent
 
@@ -91,6 +93,10 @@ func NewRequest(conf Config) Request {
 		},
 	}
 
+	// if req.Config.FollowRedirect {
+	// 	req.Client.CheckRedirect = nil
+	// }
+
 	return req
 }
 
@@ -145,6 +151,25 @@ func (req *Request) Send(word string) (Response, error) {
 	}
 	defer tmpResp.Body.Close()
 
-	resp := NewResponse(tmpResp, req, word)
+	// Process redirects
+	if tmpResp.StatusCode == http.StatusFound || tmpResp.StatusCode == http.StatusSeeOther || tmpResp.StatusCode == http.StatusTemporaryRedirect {
+		redirectUrl, err := tmpResp.Location()
+		if err != nil {
+			return errorResponse(req, word), err
+		}
+		newReq, err = http.NewRequest("GET", redirectUrl.String(), nil)
+		if err != nil {
+			return errorResponse(req, word), err
+		}
+		tmpResp, err = req.Client.Do(newReq)
+		if err != nil {
+			return errorResponse(req, word), err
+		}
+		defer tmpResp.Body.Close()
+		resp := NewResponse(tmpResp, req, word, redirectUrl.Path)
+		return resp, nil
+	}
+
+	resp := NewResponse(tmpResp, req, word, "")
 	return resp, nil
 }

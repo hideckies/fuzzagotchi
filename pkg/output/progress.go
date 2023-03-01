@@ -20,11 +20,11 @@ func NewProgressBar(max int, desc string) ProgressBar {
 		// progressbar.OptionShowDescriptionAtLineEnd(),
 		progressbar.OptionSetDescription(fmt.Sprintf("[yellow]%s[reset]", desc)),
 		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[yellow]=[reset]",
-			SaucerHead:    "[yellow]>[reset]",
+			Saucer:        "[yellow]+[reset]",
+			SaucerHead:    "[yellow]+[reset]",
 			SaucerPadding: " ",
-			BarStart:      "|",
-			BarEnd:        "|",
+			BarStart:      "[cyan]|[reset]",
+			BarEnd:        "[cyan]|[reset]",
 		}),
 		progressbar.OptionClearOnFinish())
 }
