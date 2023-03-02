@@ -42,12 +42,25 @@ func NewRequest(conf Config) Request {
 
 	// Set headers
 	if len(conf.Header) > 0 {
-		headers := strings.Split(conf.Header, ";")
-		for _, v := range headers {
-			header := strings.Split(strings.TrimSpace(v), ":")
-			key := header[0]
-			val := header[1]
-			req.Headers[key] = val
+		// If Cookie
+		if strings.Contains(conf.Header, "Cookie") {
+			cookie := strings.Replace(strings.TrimSpace(conf.Header), "Cookie:", "", -1)
+			cookieVals := strings.Split(cookie, ";")
+			for _, cookieVal := range cookieVals {
+				c := strings.Split(strings.TrimSpace(cookieVal), "=")
+				key := c[0]
+				val := c[1]
+				req.Cookies[key] = val
+			}
+		} else {
+			// If common headers
+			headers := strings.Split(conf.Header, ";")
+			for _, v := range headers {
+				header := strings.Split(strings.TrimSpace(v), ":")
+				key := header[0]
+				val := header[1]
+				req.Headers[key] = val
+			}
 		}
 	}
 	if _, ok := req.Headers["User-Agent"]; !ok {
@@ -166,10 +179,16 @@ func (req *Request) Send(word string) (Response, error) {
 			return errorResponse(req, word), err
 		}
 		defer tmpResp.Body.Close()
-		resp := NewResponse(tmpResp, req, word, redirectUrl.Path)
+		resp := NewResponse(tmpResp, req, word, getPath(newReqURL), redirectUrl.Path)
 		return resp, nil
 	}
 
-	resp := NewResponse(tmpResp, req, word, "")
+	resp := NewResponse(tmpResp, req, word, getPath(newReqURL), "")
 	return resp, nil
+}
+
+// Get path from URL
+func getPath(url string) string {
+	urlSplit := strings.Split(url, "/")
+	return "/" + strings.Join(urlSplit[3:], "/")
 }

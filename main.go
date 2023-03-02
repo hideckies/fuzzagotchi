@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"reflect"
 	"strings"
 
 	"github.com/fatih/color"
@@ -44,14 +45,32 @@ func main() {
 
 	output.Banner(cmd.Options)
 
+	// Detect the fuzz type
+	fuzztype := detectFuzzType(cmd.Options)
+
 	// Count the number of words
 	wordlist, err := os.ReadFile(cmd.Options.Wordlist)
 	if err != nil {
 		panic(err)
 	}
+
 	totalWords := len(strings.Split(string(wordlist), "\n"))
 
 	// Create a new Fuzzer and start fuzzing
-	fuzzer := fuzzer.NewFuzzer(ctx, cmd.Options, totalWords)
+	fuzzer := fuzzer.NewFuzzer(ctx, cmd.Options, fuzztype, totalWords)
 	fuzzer.Run()
+}
+
+// Detect the fuzz type
+func detectFuzzType(opts cmd.CmdOptions) string {
+	vals := reflect.ValueOf(opts)
+	types := vals.Type()
+	for i := 0; i < vals.NumField(); i++ {
+		key := types.Field(i).Name
+		val := vals.Field(i).String()
+		if strings.Contains(val, "EGG") {
+			return key
+		}
+	}
+	return ""
 }

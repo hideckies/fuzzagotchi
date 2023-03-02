@@ -41,7 +41,16 @@ func Banner(options cmd.CmdOptions) {
 	}
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Threads"), color.CyanString("%d", options.Threads))
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Delay"), color.CyanString(options.Delay))
-	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Status Code"), color.CyanString("%s", util.IntJoin(options.StatusCode, ",")))
+	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Match Status"), color.CyanString("%s", util.IntJoin(options.MatchStatus, ",")))
+	if options.MatchLength != "" {
+		fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Match Length"), color.CyanString(options.MatchLength))
+	}
+	if len(options.HideStatus) > 0 {
+		fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Hide Status"), color.CyanString("%s", util.IntJoin(options.HideStatus, ",")))
+	}
+	if options.HideLength != "" {
+		fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Hide Length"), color.CyanString(options.HideLength))
+	}
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Follow Redirect"), color.CyanString("%t", options.FollowRedirect))
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Recursion"), color.CyanString("%t", options.Recursion))
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Verbose"), color.CyanString("%t", options.Verbose))

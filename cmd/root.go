@@ -36,26 +36,24 @@ FUZZER OPTIONS:
   -p, --delay            Delay between each request e.g. 0.8-1.5
       --retry            Number of retry when a request error (default: 2)
   -r, --recursion        Enable resursive brute force (default: false)
-  -t, --threads          Number of threads (default: 10)
+  -t, --threads          Number of threads (default: 20)
       --timeout          Request timeout in seconds (default: 10)
       --user-agent       Specific User-Agent
   
-      --status-code       Display given status code only.
-      --content-length    Display given content-length e.g. 120-560
-      --hide-status      Hide given status code.
-      --hide-length      Hide given content-length e.g. 320
+      --ms               Display only matched status code (default: 200, 204, 301, 302, 307, 401, 403, 500)
+      --ml               Display only matched content-length
+      --hs               Hide matched status code
+      --hl               Hide matched content-length
   
-      --no-color   Disable colorize the output (default: false)
-      -v, --verbose    Verbose mode (default: false)
+      --no-color         Disable colorize the output (default: false)
+      -v, --verbose      Verbose mode (default: false)
 
 META OPTIONS:
-
-  -h, --help  Print the usage of Fuzzagotchi
-  version     Print the version of Fuzzagotchi
-
+   -h, --help            Print the usage of Fuzzagotchi
+   version               Print the version of Fuzzagotchi
 
 EXAMPLES:
-
+  fuzzagotchi -u https://example.com -w wordlist.txt
   fuzzagotchi -u https://example.com/EGG -w wordlist.txt
 `
 
@@ -76,8 +74,10 @@ type CmdOptions struct {
 	Timeout        int
 	UserAgent      string
 
-	StatusCode    []int
-	ContentLength string
+	MatchStatus []int
+	MatchLength string
+	HideStatus  []int
+	HideLength  string
 
 	NoColor bool
 	Verbose bool
@@ -104,12 +104,14 @@ func init() {
 	rootCmd.Flags().StringVarP(&Options.Delay, "delay", "p", "0", "")
 	rootCmd.Flags().BoolVarP(&Options.Recursion, "recursion", "r", false, "")
 	rootCmd.Flags().IntVarP(&Options.Retry, "retry", "", 2, "")
-	rootCmd.Flags().IntVarP(&Options.Threads, "threads", "t", 10, "")
+	rootCmd.Flags().IntVarP(&Options.Threads, "threads", "t", 20, "")
 	rootCmd.Flags().IntVarP(&Options.Timeout, "timeout", "", 10, "")
 	rootCmd.Flags().StringVarP(&Options.UserAgent, "user-agent", "", "Fuzzagotchi", "")
 
-	rootCmd.Flags().IntSliceVarP(&Options.StatusCode, "status-code", "", []int{200, 204, 301, 302, 307, 401, 403, 500}, "")
-	rootCmd.Flags().StringVarP(&Options.ContentLength, "content-length", "", "", "")
+	rootCmd.Flags().IntSliceVarP(&Options.MatchStatus, "ms", "", []int{200, 204, 301, 302, 307, 401, 403, 500}, "")
+	rootCmd.Flags().StringVarP(&Options.MatchLength, "ml", "", "", "")
+	rootCmd.Flags().IntSliceVarP(&Options.HideStatus, "hs", "", []int{}, "")
+	rootCmd.Flags().StringVarP(&Options.HideLength, "hl", "", "", "")
 
 	rootCmd.Flags().BoolVarP(&Options.NoColor, "no-color", "", false, "")
 	rootCmd.Flags().BoolVarP(&Options.Verbose, "verbose", "v", false, "")

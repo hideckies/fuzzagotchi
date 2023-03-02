@@ -20,18 +20,21 @@ import (
 )
 
 type Config struct {
-	ContentLength  string          `json:"content_length"`
 	Context        context.Context `json:"context"`
 	Cookie         string          `json:"cookie"`
 	Delay          string          `json:"delay"`
 	FollowRedirect bool            `json:"follow_redirect"`
+	FuzzType       string          `json:"fuzztype"`
 	EGG            bool            `json:"egg"`
 	Header         string          `json:"header"`
+	HideLength     string          `json:"hide_length"`
+	HideStatus     []int           `json:"hide_status"`
 	Host           string          `json:"host"`
+	MatchLength    string          `json:"match_length"`
+	MatchStatus    []int           `json:"match_status"`
 	Method         string          `json:"method"`
 	PostData       string          `json:"post_data"`
 	Retry          int             `json:"retry"`
-	StatusCode     []int           `json:"match_status"`
 	Threads        int             `json:"threads"`
 	Timeout        int             `json:"timeout"`
 	URL            string          `json:"url"`
@@ -52,7 +55,7 @@ type Fuzzer struct {
 }
 
 // Initialize a new Fuzzer
-func NewFuzzer(ctx context.Context, options cmd.CmdOptions, totalWords int) Fuzzer {
+func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, totalWords int) Fuzzer {
 	var f Fuzzer
 
 	egg := false
@@ -61,18 +64,21 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, totalWords int) Fuzz
 	}
 
 	f.Config = Config{
-		ContentLength:  options.ContentLength,
 		Cookie:         options.Cookie,
 		Context:        ctx,
 		Delay:          options.Delay,
 		EGG:            egg,
+		FuzzType:       fuzztype,
 		FollowRedirect: options.FollowRedirect,
 		Header:         options.Header,
+		HideLength:     options.HideLength,
+		HideStatus:     options.HideStatus,
 		Host:           extractHost(options.URL),
+		MatchLength:    options.MatchLength,
+		MatchStatus:    options.MatchStatus,
 		Method:         options.Method,
 		PostData:       options.PostData,
 		Retry:          options.Retry,
-		StatusCode:     options.StatusCode,
 		Threads:        options.Threads,
 		Timeout:        options.Timeout,
 		URL:            options.URL,
@@ -80,6 +86,12 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, totalWords int) Fuzz
 		Verbose:        options.Verbose,
 		Wordlist:       options.Wordlist,
 	}
+
+	// Auto EGG
+	if fuzztype == "" {
+		f.Config.URL = util.AdjustUrlSuffix(f.Config.URL) + "EGG"
+	}
+
 	f.Request = NewRequest(f.Config)
 	f.Responses = make([]Response, 0)
 	// f.ResponsePool = make([]Response, 0)
@@ -92,10 +104,6 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, totalWords int) Fuzz
 func (f *Fuzzer) Run() {
 	runtime.GOMAXPROCS(f.Config.Threads)
 	var wg sync.WaitGroup
-
-	fmt.Printf("%s\n", color.YellowString(output.TMPL_BAR_DOUBLE_M))
-	fmt.Printf("%s %s\n", color.CyanString("+"), color.CyanString("FUZZING DIRECTORIES"))
-	fmt.Printf("%s\n", color.YellowString(output.TMPL_BAR_DOUBLE_M))
 
 	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...")
 
@@ -117,7 +125,26 @@ func (f *Fuzzer) Run() {
 
 	for scanner.Scan() {
 		bar.Add(1)
-		wordCh <- scanner.Text()
+
+		word := scanner.Text()
+		wordCh <- word
+
+		// Auto EGG
+		if f.Config.FuzzType == "" {
+			// TXT files
+			wTxt := word + ".txt"
+			wordCh <- wTxt
+			// HTML files
+			wHtml := word + ".html"
+			wordCh <- wHtml
+			// PHP files
+			wPhp := word + ".php"
+			wordCh <- wPhp
+			// Hidden files
+			wHidden := "." + word
+			wordCh <- wHidden
+		}
+
 	}
 
 	bar.Close()
@@ -125,6 +152,8 @@ func (f *Fuzzer) Run() {
 	wg.Wait()
 
 	fmt.Println()
+
+	f.printResultHeader()
 
 	// Finding information in each page
 	// explore := NewExplore(f.Responses)
@@ -142,9 +171,10 @@ func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string, bar prog
 				fmt.Println(err)
 			}
 		}
+
 		if f.matcher(resp) {
 			f.Responses = append(f.Responses, resp)
-			f.output(resp, bar)
+			f.printResultURL(resp, bar)
 		}
 		time.Sleep(getDelay(f.Config.Delay))
 	}
@@ -170,17 +200,21 @@ func (f *Fuzzer) process(word string, n int) (Response, error) {
 
 // Check if the response matches rules
 func (f *Fuzzer) matcher(resp Response) bool {
-	if util.ContainInt(f.Config.StatusCode, resp.StatusCode) && resp.ContentLength >= 0 && f.matchContentLength(resp.ContentLength) {
+	if util.ContainInt(f.Config.MatchStatus, resp.StatusCode) && !util.ContainInt(f.Config.HideStatus, resp.StatusCode) && f.matchContentLength(resp.ContentLength) {
 		return true
 	}
 	return false
 }
 
-// Print results
-func (f *Fuzzer) output(resp Response, bar progressbar.ProgressBar) {
+// Print result of URL fuzzing
+func (f *Fuzzer) printResultURL(resp Response, bar progressbar.ProgressBar) {
+	if f.Config.FuzzType != "" && f.Config.FuzzType != "URL" {
+		return
+	}
+
 	bar.Clear()
 
-	result := fmt.Sprintf("%-23s %s%s %s%s",
+	result := fmt.Sprintf("%-32s %s%s %s%s",
 		color.CyanString(resp.Path),
 		color.YellowString("("),
 		color.GreenString("status: %d", resp.StatusCode),
@@ -191,6 +225,50 @@ func (f *Fuzzer) output(resp Response, bar progressbar.ProgressBar) {
 		fmt.Printf("%s -> %s\n", result, color.GreenString(resp.RedirectPath))
 	} else {
 		fmt.Printf("%s\n", result)
+	}
+}
+
+// Print result of header fuzzing
+func (f *Fuzzer) printResultHeader() {
+	if f.Config.FuzzType != "Header" {
+		return
+	}
+
+	color.Yellow(output.TMPL_BAR_DOUBLE_M)
+	fmt.Printf("%s %s\n", color.CyanString("+"), color.CyanString("HEADER FUZZING"))
+	color.Yellow(output.TMPL_BAR_DOUBLE_M)
+
+	if len(f.Responses) > 0 {
+		lengthToWords := make(map[int][]string)
+		for _, resp := range f.Responses {
+			lengthToWords[resp.ContentLength] = append(lengthToWords[resp.ContentLength], resp.Word)
+		}
+
+		// Exclude
+		maxCnt := 0
+		keyOfMaxCnt := 0
+		for key, val := range lengthToWords {
+			cnt := len(val)
+			if maxCnt < cnt {
+				maxCnt = cnt
+				keyOfMaxCnt = key
+			}
+		}
+		delete(lengthToWords, keyOfMaxCnt)
+
+		if len(lengthToWords) > 0 {
+			// Print result
+			for _, val := range lengthToWords {
+				for _, v := range val {
+					fmt.Printf("%-23s",
+						color.CyanString(v))
+				}
+			}
+		} else {
+			fmt.Println("No result found")
+		}
+	} else {
+		fmt.Println("No result found.")
 	}
 }
 

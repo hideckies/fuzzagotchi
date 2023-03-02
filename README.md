@@ -14,7 +14,9 @@ An automatic web fuzzer.
 
 ## Usage
 
-### Automatic Fuzzing (Under development)
+### Automatic Fuzzing
+
+This mode automatically fuzzes directories contains **`*.txt`**, **`*.php`**, **`.html`**, etc.
 
 ```sh
 fuzzagotchi -u https://example.com -w wordlist.txt
@@ -25,7 +27,12 @@ fuzzagotchi -u https://example.com -w wordlist.txt
 If you want to specify where to fuzz, you can put **"EGG"** keyword in URL, POST params, etc.
 
 ```sh
+# Directories
 fuzzagotchi -u https://example.com/EGG -w wordlist.txt
+# Vhosts
+fuzzagotchi -u https://example.com -H "Host: EGG.example.com" -w wordlist.txt
+# Cookies
+fuzzagotchi -u https://example.com -H "Cookie: key=EGG" -w wordlist.txt
 ```
 
 <br />
