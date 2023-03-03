@@ -1,15 +1,8 @@
+![logo](img/banner.png)
 
 # Fuzzagotchi
 
 An automatic web fuzzer.
-
-![logo](img/banner.png)
-
-<br />
-
-## Status
-
-**This is under development. So only some features work for now.**
 
 <br />
 
