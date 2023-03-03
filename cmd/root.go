@@ -52,9 +52,14 @@ META OPTIONS:
    -h, --help            Print the usage of Fuzzagotchi
    version               Print the version of Fuzzagotchi
 
+BUILTIN WORDLISTS:
+  ALPHA_A_Z              Alphabets from a to z (contains both lowercase and uppercase)
+  NUM_0_100              Numbers from min to max
+
 EXAMPLES:
   fuzzagotchi -u https://example.com -w wordlist.txt
   fuzzagotchi -u https://example.com/EGG -w wordlist.txt
+  fuzzagotchi -u https://example.com/?id=EGG -w NUM_0_999
 `
 
 type CmdOptions struct {
