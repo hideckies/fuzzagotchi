@@ -1,8 +1,9 @@
-![logo](img/banner.png)
 
 # Fuzzagotchi
 
 An automatic web fuzzer.
+
+![logo](img/banner.png)
 
 <br />
 
@@ -13,6 +14,8 @@ An automatic web fuzzer.
 <br />
 
 ## Usage
+
+![screenshot](img/screenshot.png)
 
 ### Automatic Fuzzing
 
@@ -33,6 +36,26 @@ fuzzagotchi -u https://example.com/EGG -w wordlist.txt
 fuzzagotchi -u https://example.com -H "Host: EGG.example.com" -w wordlist.txt
 # Cookies
 fuzzagotchi -u https://example.com -H "Cookie: key=EGG" -w wordlist.txt
+```
+
+### Using Built-in Wordlists
+
+You can use **built-in wordlists** by specifying the special keywords as follow.
+
+```sh
+fuzzagotchi -u https://example.com/?id=EGG -w NUM_0_999
+```
+
+Below are the list of built-in wordlist.
+
+```sh
+# Alphabets (ALPHA_START_END)
+ALPHA_A_Z
+ALPHA_F_Q
+
+# Numbers (NUM_START_END)
+NUM_0_100
+NUM_25_320
 ```
 
 <br />

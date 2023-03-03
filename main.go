@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/fatih/color"
@@ -48,17 +49,27 @@ func main() {
 	// Detect the fuzz type
 	fuzztype := detectFuzzType(cmd.Options)
 
-	// Count the number of words
-	wordlist, err := os.ReadFile(cmd.Options.Wordlist)
-	if err != nil {
-		panic(err)
+	// Check if the -w flag is buildin list.
+	wordlistType := ""
+	reAlpha := regexp.MustCompile(`ALPHA_[A-Z]+_[A-Z]+`)
+	reNum := regexp.MustCompile(`NUM_[0-9]+_[0-9]+`)
+	totalWords := 0
+	if reAlpha.MatchString(cmd.Options.Wordlist) || reNum.MatchString(cmd.Options.Wordlist) {
+		wordlistType = "builtin"
+	} else {
+		// Count the number of words
+		wordlist, err := os.ReadFile(cmd.Options.Wordlist)
+		if err != nil {
+			panic(err)
+		}
+		totalWords = len(strings.Split(string(wordlist), "\n"))
 	}
 
-	totalWords := len(strings.Split(string(wordlist), "\n"))
-
 	// Create a new Fuzzer and start fuzzing
-	fuzzer := fuzzer.NewFuzzer(ctx, cmd.Options, fuzztype, totalWords)
-	fuzzer.Run()
+	fuzzer := fuzzer.NewFuzzer(ctx, cmd.Options, fuzztype, wordlistType, totalWords)
+	if err := fuzzer.Run(); err != nil {
+		fmt.Printf("%v", err)
+	}
 }
 
 // Detect the fuzz type

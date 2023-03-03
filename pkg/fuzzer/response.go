@@ -19,15 +19,19 @@ type Response struct {
 	Word          string            `json:"word"`
 }
 
-func NewResponse(resp *http.Response, req *Request, word string, firstPath string, redirectPath string) Response {
+func NewResponse(resp *http.Response, req *Request, word string, reqPath string, redirectResp *http.Response) Response {
 	var newResp Response
 	newResp.Body = make([]byte, 0)
 	newResp.Config = req.Config
 	newResp.ContentLength = int(resp.ContentLength)
 	newResp.Delay = req.Delay
 	newResp.Headers = make(map[string]string)
-	newResp.Path = firstPath
-	newResp.RedirectPath = redirectPath
+	newResp.Path = reqPath
+	if redirectResp == nil {
+		newResp.RedirectPath = ""
+	} else {
+		newResp.RedirectPath = redirectResp.Request.URL.Path
+	}
 	newResp.Status = resp.Status
 	newResp.StatusCode = resp.StatusCode
 	newResp.Word = word
@@ -39,11 +43,8 @@ func NewResponse(resp *http.Response, req *Request, word string, firstPath strin
 		newResp.Body = body
 	}
 
-	if newResp.ContentLength < 0 {
-		newResp.ContentLength = len(body)
-	}
-
-	// fmt.Println(resp.Request.URL.RequestURI())
+	// Update content length
+	newResp.ContentLength = len(body)
 
 	return newResp
 }

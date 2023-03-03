@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -41,6 +42,7 @@ type Config struct {
 	UserAgent      string          `json:"user_agent"`
 	Verbose        bool            `json:"verbose"`
 	Wordlist       string          `json:"wordlist"`
+	WordlistType   string          `json:"wordlist"`
 }
 
 type Fuzzer struct {
@@ -55,7 +57,7 @@ type Fuzzer struct {
 }
 
 // Initialize a new Fuzzer
-func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, totalWords int) Fuzzer {
+func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, wordlistType string, totalWords int) Fuzzer {
 	var f Fuzzer
 
 	egg := false
@@ -85,6 +87,7 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, tot
 		UserAgent:      options.UserAgent,
 		Verbose:        options.Verbose,
 		Wordlist:       options.Wordlist,
+		WordlistType:   wordlistType,
 	}
 
 	// Auto EGG
@@ -94,57 +97,98 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, tot
 
 	f.Request = NewRequest(f.Config)
 	f.Responses = make([]Response, 0)
-	// f.ResponsePool = make([]Response, 0)
 	f.TotalWords = totalWords
 	f.ErrorWords = make([]string, 0)
 	return f
 }
 
 // Run to fuzz
-func (f *Fuzzer) Run() {
+func (f *Fuzzer) Run() error {
 	runtime.GOMAXPROCS(f.Config.Threads)
 	var wg sync.WaitGroup
 
 	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...")
 
-	readFile, err := os.Open(f.Config.Wordlist)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer readFile.Close()
-
-	scanner := bufio.NewScanner(readFile)
-	scanner.Split(bufio.ScanLines)
-
 	wordCh := make(chan string, f.Config.Threads)
 
-	for i := 0; i < f.Config.Threads; i++ {
-		wg.Add(1)
-		go f.worker(&wg, i, wordCh, bar)
-	}
+	// Wordlist from a file
+	if f.Config.WordlistType == "" {
 
-	for scanner.Scan() {
-		bar.Add(1)
+		readFile, err := os.Open(f.Config.Wordlist)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer readFile.Close()
 
-		word := scanner.Text()
-		wordCh <- word
+		scanner := bufio.NewScanner(readFile)
+		scanner.Split(bufio.ScanLines)
 
-		// Auto EGG
-		if f.Config.FuzzType == "" {
-			// TXT files
-			wTxt := word + ".txt"
-			wordCh <- wTxt
-			// HTML files
-			wHtml := word + ".html"
-			wordCh <- wHtml
-			// PHP files
-			wPhp := word + ".php"
-			wordCh <- wPhp
-			// Hidden files
-			wHidden := "." + word
-			wordCh <- wHidden
+		for i := 0; i < f.Config.Threads; i++ {
+			wg.Add(1)
+			go f.worker(&wg, i, wordCh, bar)
 		}
 
+		for scanner.Scan() {
+			bar.Add(1)
+
+			word := scanner.Text()
+			wordCh <- word
+
+			// Auto EGG
+			if f.Config.FuzzType == "" {
+				// TXT files
+				wordCh <- insertExt(word, ".txt")
+				// HTML files
+				wordCh <- insertExt(word, ".html")
+				// PHP files
+				wordCh <- insertExt(word, ".php")
+				// Hidden files
+				wordCh <- insertExt(word, ".")
+			}
+
+		}
+	} else {
+		// Wordlist is a builtin
+
+		// Analyze
+		words := strings.Split(f.Config.Wordlist, "_")
+		wordArr := make([]string, 0)
+		if words[0] == "ALPHA" {
+			runes := []rune(words[1] + words[2])
+			start := runes[0]
+			end := runes[1]
+			for i := start; i <= end; i++ {
+				// Lowercase
+				wordArr = append(wordArr, strings.ToLower(string(i)))
+				// Uppercase
+				wordArr = append(wordArr, strings.ToUpper(string(i)))
+
+			}
+		} else if words[0] == "NUM" {
+			start, err := strconv.Atoi(words[1])
+			if err != nil {
+				return fmt.Errorf("%s", err)
+			}
+			end, err := strconv.Atoi(words[2])
+			if err != nil {
+				return fmt.Errorf("%s", err)
+			}
+
+			// Create a numbers array
+			for i := start; i <= end; i++ {
+				wordArr = append(wordArr, strconv.Itoa(i))
+			}
+		}
+
+		for i := 0; i < f.Config.Threads; i++ {
+			wg.Add(1)
+			go f.worker(&wg, i, wordCh, bar)
+		}
+
+		for _, w := range wordArr {
+			bar.Add(1)
+			wordCh <- w
+		}
 	}
 
 	bar.Close()
@@ -153,11 +197,11 @@ func (f *Fuzzer) Run() {
 
 	fmt.Println()
 
-	f.printResultHeader()
-
 	// Finding information in each page
 	// explore := NewExplore(f.Responses)
 	// explore.explore()
+
+	return nil
 }
 
 // Worker to fuzz using given word
@@ -174,7 +218,7 @@ func (f *Fuzzer) worker(wg *sync.WaitGroup, id int, wordCh chan string, bar prog
 
 		if f.matcher(resp) {
 			f.Responses = append(f.Responses, resp)
-			f.printResultURL(resp, bar)
+			f.printResult(resp, bar)
 		}
 		time.Sleep(getDelay(f.Config.Delay))
 	}
@@ -206,16 +250,18 @@ func (f *Fuzzer) matcher(resp Response) bool {
 	return false
 }
 
-// Print result of URL fuzzing
-func (f *Fuzzer) printResultURL(resp Response, bar progressbar.ProgressBar) {
-	if f.Config.FuzzType != "" && f.Config.FuzzType != "URL" {
-		return
-	}
-
+// Print result
+func (f *Fuzzer) printResult(resp Response, bar progressbar.ProgressBar) {
 	bar.Clear()
 
+	keyword := resp.Path
+
+	if f.Config.FuzzType != "" && f.Config.FuzzType != "URL" {
+		keyword = resp.Word
+	}
+
 	result := fmt.Sprintf("%-32s %s%s %s%s",
-		color.CyanString(resp.Path),
+		color.CyanString(keyword),
 		color.YellowString("("),
 		color.GreenString("status: %d", resp.StatusCode),
 		color.HiMagentaString("length: %d", resp.ContentLength),
@@ -228,50 +274,6 @@ func (f *Fuzzer) printResultURL(resp Response, bar progressbar.ProgressBar) {
 	}
 }
 
-// Print result of header fuzzing
-func (f *Fuzzer) printResultHeader() {
-	if f.Config.FuzzType != "Header" {
-		return
-	}
-
-	color.Yellow(output.TMPL_BAR_DOUBLE_M)
-	fmt.Printf("%s %s\n", color.CyanString("+"), color.CyanString("HEADER FUZZING"))
-	color.Yellow(output.TMPL_BAR_DOUBLE_M)
-
-	if len(f.Responses) > 0 {
-		lengthToWords := make(map[int][]string)
-		for _, resp := range f.Responses {
-			lengthToWords[resp.ContentLength] = append(lengthToWords[resp.ContentLength], resp.Word)
-		}
-
-		// Exclude
-		maxCnt := 0
-		keyOfMaxCnt := 0
-		for key, val := range lengthToWords {
-			cnt := len(val)
-			if maxCnt < cnt {
-				maxCnt = cnt
-				keyOfMaxCnt = key
-			}
-		}
-		delete(lengthToWords, keyOfMaxCnt)
-
-		if len(lengthToWords) > 0 {
-			// Print result
-			for _, val := range lengthToWords {
-				for _, v := range val {
-					fmt.Printf("%-23s",
-						color.CyanString(v))
-				}
-			}
-		} else {
-			fmt.Println("No result found")
-		}
-	} else {
-		fmt.Println("No result found.")
-	}
-}
-
 // Extract hostname from URL
 func extractHost(_url string) string {
 	u, err := url.Parse(_url)
@@ -280,4 +282,21 @@ func extractHost(_url string) string {
 		return ""
 	}
 	return u.Hostname()
+}
+
+// Insert extentions (.php, .txt, etc.) to the word
+// This is only used in Auto EGG mode.
+func insertExt(word string, ext string) string {
+	if ext == "." {
+		// if the word is directory, insert "." before the last path.
+		if strings.Contains(word, "/") {
+			paths := strings.Split(word, "/")
+			lastPath := "." + paths[len(paths)-1]
+			return strings.Join(paths[:len(paths)-2], "/") + "/" + lastPath
+		} else {
+			return ext + word
+		}
+	} else {
+		return word + ext
+	}
 }

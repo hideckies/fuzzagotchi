@@ -134,8 +134,8 @@ func (req *Request) Send(word string) (Response, error) {
 	// Update Headers (also Host)
 	for key, val := range newReqHeaders {
 		// Replace EGG to word
-		key = strings.ReplaceAll(key, "EGG", word)
-		val = strings.ReplaceAll(val, "EGG", word)
+		key = strings.TrimSpace(strings.ReplaceAll(key, "EGG", word))
+		val = strings.TrimSpace(strings.ReplaceAll(val, "EGG", word))
 		newReq.Header.Set(key, val)
 
 		// If "Host" header exists, update newReq.Host
@@ -149,8 +149,8 @@ func (req *Request) Send(word string) (Response, error) {
 	// Update Cookies
 	for key, val := range newReqCookies {
 		// Replace EGG to word
-		key = strings.ReplaceAll(key, "EGG", word)
-		val = strings.ReplaceAll(val, "EGG", word)
+		key = strings.TrimSpace(strings.ReplaceAll(key, "EGG", word))
+		val = strings.TrimSpace(strings.ReplaceAll(val, "EGG", word))
 		cookie := &http.Cookie{
 			Name:  key,
 			Value: val,
@@ -174,16 +174,17 @@ func (req *Request) Send(word string) (Response, error) {
 		if err != nil {
 			return errorResponse(req, word), err
 		}
-		tmpResp, err = req.Client.Do(newReq)
+		var redirectResp *http.Response
+		redirectResp, err = req.Client.Do(newReq)
 		if err != nil {
 			return errorResponse(req, word), err
 		}
-		defer tmpResp.Body.Close()
-		resp := NewResponse(tmpResp, req, word, getPath(newReqURL), redirectUrl.Path)
+		defer redirectResp.Body.Close()
+		resp := NewResponse(tmpResp, req, word, getPath(newReqURL), redirectResp)
 		return resp, nil
 	}
 
-	resp := NewResponse(tmpResp, req, word, getPath(newReqURL), "")
+	resp := NewResponse(tmpResp, req, word, getPath(newReqURL), nil)
 	return resp, nil
 }
 
