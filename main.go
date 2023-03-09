@@ -15,6 +15,7 @@ import (
 	"github.com/hideckies/fuzzagotchi/pkg/output"
 )
 
+// Main function to start running Fuzzagotchi.
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 

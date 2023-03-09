@@ -1,6 +1,7 @@
 package output
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/schollz/progressbar/v3"
@@ -8,7 +9,7 @@ import (
 
 type ProgressBar *progressbar.ProgressBar
 
-func NewProgressBar(max int, desc string) ProgressBar {
+func NewProgressBar(max int, desc string, errors int) ProgressBar {
 	return progressbar.NewOptions(max,
 		progressbar.OptionUseANSICodes(true),
 		// progressbar.OptionSetWriter(os.Stdout),
@@ -18,7 +19,7 @@ func NewProgressBar(max int, desc string) ProgressBar {
 		progressbar.OptionThrottle(1*time.Millisecond),
 		progressbar.OptionSetWidth(10),
 		progressbar.OptionShowDescriptionAtLineEnd(),
-		progressbar.OptionSetDescription("\r"),
+		progressbar.OptionSetDescription(fmt.Sprintf("Errors %d\r", errors)),
 		progressbar.OptionSetTheme(progressbar.Theme{
 			Saucer:        "[yellow]+[reset]",
 			SaucerHead:    "[yellow]+[reset]",

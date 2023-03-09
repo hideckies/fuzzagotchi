@@ -48,7 +48,7 @@ ALPHA_F_Q
 
 # Numbers (NUM_START_END)
 NUM_0_100
-NUM_25_320
+NUM_0000_9999
 ```
 
 <br />
