@@ -165,7 +165,7 @@ func (req *Request) Send(word string) (Response, error) {
 	defer tmpResp.Body.Close()
 
 	// Process redirects
-	if tmpResp.StatusCode == http.StatusFound || tmpResp.StatusCode == http.StatusSeeOther || tmpResp.StatusCode == http.StatusTemporaryRedirect {
+	if tmpResp.StatusCode == http.StatusMovedPermanently || tmpResp.StatusCode == http.StatusFound || tmpResp.StatusCode == http.StatusSeeOther || tmpResp.StatusCode == http.StatusTemporaryRedirect {
 		redirectUrl, err := tmpResp.Location()
 		if err != nil {
 			return errorResponse(req, word), err
@@ -180,6 +180,7 @@ func (req *Request) Send(word string) (Response, error) {
 			return errorResponse(req, word), err
 		}
 		defer redirectResp.Body.Close()
+
 		resp := NewResponse(tmpResp, req, word, getPath(newReqURL), redirectResp)
 		return resp, nil
 	}

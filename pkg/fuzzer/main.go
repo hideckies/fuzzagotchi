@@ -42,7 +42,7 @@ type Config struct {
 	UserAgent      string          `json:"user_agent"`
 	Verbose        bool            `json:"verbose"`
 	Wordlist       string          `json:"wordlist"`
-	WordlistType   string          `json:"wordlist"`
+	WordlistType   string          `json:"wordlist_type"`
 }
 
 type Fuzzer struct {
@@ -107,7 +107,7 @@ func (f *Fuzzer) Run() error {
 	runtime.GOMAXPROCS(f.Config.Threads)
 	var wg sync.WaitGroup
 
-	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...")
+	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...", len(f.ErrorWords))
 
 	wordCh := make(chan string, f.Config.Threads)
 
@@ -130,6 +130,7 @@ func (f *Fuzzer) Run() error {
 
 		for scanner.Scan() {
 			bar.Add(1)
+			bar.Describe(fmt.Sprintf("Errors %d\r", len(f.ErrorWords)))
 
 			word := scanner.Text()
 			wordCh <- word
@@ -148,7 +149,7 @@ func (f *Fuzzer) Run() error {
 
 		}
 	} else {
-		// Wordlist is a builtin
+		// Built-in wordlist
 
 		// Analyze
 		words := strings.Split(f.Config.Wordlist, "_")
@@ -165,6 +166,8 @@ func (f *Fuzzer) Run() error {
 
 			}
 		} else if words[0] == "NUM" {
+			digits := len(words[1])
+
 			start, err := strconv.Atoi(words[1])
 			if err != nil {
 				return fmt.Errorf("%s", err)
@@ -176,7 +179,7 @@ func (f *Fuzzer) Run() error {
 
 			// Create a numbers array
 			for i := start; i <= end; i++ {
-				wordArr = append(wordArr, strconv.Itoa(i))
+				wordArr = append(wordArr, fmt.Sprintf("%0*d", digits, i))
 			}
 		}
 
@@ -187,6 +190,7 @@ func (f *Fuzzer) Run() error {
 
 		for _, w := range wordArr {
 			bar.Add(1)
+			bar.Describe(fmt.Sprintf("Errors %d\r", len(f.ErrorWords)))
 			wordCh <- w
 		}
 	}
@@ -233,7 +237,9 @@ func (f *Fuzzer) process(word string, n int) (Response, error) {
 	ok := false
 	for !ok && cnt <= f.Config.Retry {
 		resp, err = f.Request.Send(word)
-		if err == nil {
+		if err != nil {
+			f.ErrorWords = append(f.ErrorWords, word)
+		} else {
 			ok = true
 		}
 		time.Sleep(getDelay(f.Config.Delay))

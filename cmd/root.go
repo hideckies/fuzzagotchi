@@ -32,7 +32,7 @@ FUZZER OPTIONS:
   -H, --header           Custom header
   -C, --cookie           Custom cookie
   -d, --post-data        POST data
-      --follow-redirect  Follow redirects (default: false)
+  -f, --follow-redirect  Follow redirects (default: false)
   -p, --delay            Delay between each request e.g. 0.8-1.5
       --retry            Number of retry when a request error (default: 2)
   -r, --recursion        Enable resursive brute force (default: false)
@@ -54,7 +54,7 @@ META OPTIONS:
 
 BUILTIN WORDLISTS:
   ALPHA_A_Z              Alphabets from a to z (contains both lowercase and uppercase)
-  NUM_0_100              Numbers from min to max
+  NUM_0000_9999          Numbers from min to max
 
 EXAMPLES:
   fuzzagotchi -u https://example.com -w wordlist.txt

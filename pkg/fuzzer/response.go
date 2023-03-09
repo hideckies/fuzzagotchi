@@ -27,16 +27,23 @@ func NewResponse(resp *http.Response, req *Request, word string, reqPath string,
 	newResp.Delay = req.Delay
 	newResp.Headers = make(map[string]string)
 	newResp.Path = reqPath
-	if redirectResp == nil {
-		newResp.RedirectPath = ""
-	} else {
-		newResp.RedirectPath = redirectResp.Request.URL.Path
-	}
+	newResp.RedirectPath = ""
 	newResp.Status = resp.Status
 	newResp.StatusCode = resp.StatusCode
 	newResp.Word = word
 
-	body, err := io.ReadAll(resp.Body)
+	reader := resp.Body
+
+	if redirectResp != nil {
+		newResp.RedirectPath = redirectResp.Request.URL.Path
+		if req.Config.FollowRedirect {
+			newResp.Status = redirectResp.Status
+			newResp.StatusCode = redirectResp.StatusCode
+			reader = redirectResp.Body
+		}
+	}
+
+	body, err := io.ReadAll(reader)
 	if err != nil {
 		newResp.Body = make([]byte, 0)
 	} else {
