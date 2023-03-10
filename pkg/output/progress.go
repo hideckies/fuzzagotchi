@@ -19,7 +19,7 @@ func NewProgressBar(max int, desc string, errors int) ProgressBar {
 		progressbar.OptionThrottle(1*time.Millisecond),
 		progressbar.OptionSetWidth(10),
 		progressbar.OptionShowDescriptionAtLineEnd(),
-		progressbar.OptionSetDescription(fmt.Sprintf("Errors %d\r", errors)),
+		progressbar.OptionSetDescription(fmt.Sprintf("%s | Errors %d\r", desc, errors)),
 		progressbar.OptionSetTheme(progressbar.Theme{
 			Saucer:        "[yellow]+[reset]",
 			SaucerHead:    "[yellow]+[reset]",

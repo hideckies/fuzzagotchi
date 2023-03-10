@@ -31,6 +31,16 @@ fuzzagotchi -u https://example.com -H "Host: EGG.example.com" -w wordlist.txt
 fuzzagotchi -u https://example.com -H "Cookie: key=EGG" -w wordlist.txt
 ```
 
+### Deep Scan
+
+If you want to find more information about the website, you can scan deeply by adding **`--scan`** flag.
+
+```sh
+fuzzagotchi -u https://example.com -w wordlist.txt --scan
+```
+
+Fuzzagotchi scans website and find sensitive information (e.g. **username**, **password**, etc.), vulnerabilities, so on.
+
 ### Using Built-in Wordlists
 
 You can use **built-in wordlists** by specifying the special keywords as follow.

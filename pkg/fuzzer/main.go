@@ -30,12 +30,16 @@ type Config struct {
 	Header         string          `json:"header"`
 	HideLength     string          `json:"hide_length"`
 	HideStatus     []int           `json:"hide_status"`
+	HideWords      string          `jsong:"hide_words"`
 	Host           string          `json:"host"`
 	MatchLength    string          `json:"match_length"`
 	MatchStatus    []int           `json:"match_status"`
+	MatchWords     string          `json:"match_words"`
 	Method         string          `json:"method"`
 	PostData       string          `json:"post_data"`
+	Proxy          string          `jsong:"proxy"`
 	Retry          int             `json:"retry"`
+	Scan           bool            `json:"scan"`
 	Threads        int             `json:"threads"`
 	Timeout        int             `json:"timeout"`
 	URL            string          `json:"url"`
@@ -50,8 +54,8 @@ type Fuzzer struct {
 	Request   Request    `json:"request"`
 	Responses []Response `json:"response"`
 
-	TotalWords int      `json:"total_words"`
-	ErrorWords []string `json:"error_words"`
+	TotalWords int `json:"total_words"`
+	Errors     int `json:"errors"`
 
 	// mu *sync.Mutex `json:"-"`
 }
@@ -75,12 +79,16 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, wor
 		Header:         options.Header,
 		HideLength:     options.HideLength,
 		HideStatus:     options.HideStatus,
+		HideWords:      options.HideWords,
 		Host:           extractHost(options.URL),
 		MatchLength:    options.MatchLength,
 		MatchStatus:    options.MatchStatus,
+		MatchWords:     options.MatchWords,
 		Method:         options.Method,
 		PostData:       options.PostData,
+		Proxy:          options.Proxy,
 		Retry:          options.Retry,
+		Scan:           options.Scan,
 		Threads:        options.Threads,
 		Timeout:        options.Timeout,
 		URL:            options.URL,
@@ -98,7 +106,7 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, wor
 	f.Request = NewRequest(f.Config)
 	f.Responses = make([]Response, 0)
 	f.TotalWords = totalWords
-	f.ErrorWords = make([]string, 0)
+	f.Errors = 0
 	return f
 }
 
@@ -107,7 +115,7 @@ func (f *Fuzzer) Run() error {
 	runtime.GOMAXPROCS(f.Config.Threads)
 	var wg sync.WaitGroup
 
-	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...", len(f.ErrorWords))
+	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...", f.Errors)
 
 	wordCh := make(chan string, f.Config.Threads)
 
@@ -130,7 +138,7 @@ func (f *Fuzzer) Run() error {
 
 		for scanner.Scan() {
 			bar.Add(1)
-			bar.Describe(fmt.Sprintf("Errors %d\r", len(f.ErrorWords)))
+			bar.Describe(fmt.Sprintf("Errors %d\r", f.Errors))
 
 			word := scanner.Text()
 			wordCh <- word
@@ -190,7 +198,7 @@ func (f *Fuzzer) Run() error {
 
 		for _, w := range wordArr {
 			bar.Add(1)
-			bar.Describe(fmt.Sprintf("Errors %d\r", len(f.ErrorWords)))
+			bar.Describe(fmt.Sprintf("Errors %d\r", f.Errors))
 			wordCh <- w
 		}
 	}
@@ -201,9 +209,12 @@ func (f *Fuzzer) Run() error {
 
 	fmt.Println()
 
-	// Finding information in each page
-	// explore := NewExplore(f.Responses)
-	// explore.explore()
+	// Scan contents
+	if f.Config.Scan {
+		if err := f.Scan(); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -238,7 +249,7 @@ func (f *Fuzzer) process(word string, n int) (Response, error) {
 	for !ok && cnt <= f.Config.Retry {
 		resp, err = f.Request.Send(word)
 		if err != nil {
-			f.ErrorWords = append(f.ErrorWords, word)
+			f.Errors++
 		} else {
 			ok = true
 		}
@@ -250,7 +261,7 @@ func (f *Fuzzer) process(word string, n int) (Response, error) {
 
 // Check if the response matches rules
 func (f *Fuzzer) matcher(resp Response) bool {
-	if util.ContainInt(f.Config.MatchStatus, resp.StatusCode) && !util.ContainInt(f.Config.HideStatus, resp.StatusCode) && f.matchContentLength(resp.ContentLength) {
+	if util.ContainInt(f.Config.MatchStatus, resp.StatusCode) && !util.ContainInt(f.Config.HideStatus, resp.StatusCode) && f.matchContentLength(resp.ContentLength) && f.matchContentWords(resp.ContentWords) {
 		return true
 	}
 	return false
@@ -266,11 +277,12 @@ func (f *Fuzzer) printResult(resp Response, bar progressbar.ProgressBar) {
 		keyword = resp.Word
 	}
 
-	result := fmt.Sprintf("%-32s %s%s %s%s",
+	result := fmt.Sprintf("%-32s %s%s %-22s %s%s",
 		color.CyanString(keyword),
 		color.YellowString("("),
 		color.GreenString("status: %d", resp.StatusCode),
-		color.HiMagentaString("length: %d", resp.ContentLength),
+		color.HiBlueString("length: %d", resp.ContentLength),
+		color.HiMagentaString("words: %d", resp.ContentWords),
 		color.YellowString(")"))
 
 	if resp.RedirectPath != "" {
