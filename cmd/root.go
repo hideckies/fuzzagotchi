@@ -39,18 +39,24 @@ FUZZER OPTIONS:
   -t, --threads          Number of threads (default: 20)
       --timeout          Request timeout in seconds (default: 10)
       --user-agent       Specific User-Agent
+  -x, --proxy            Proxy URL e.g. http://127.0.0.1:8080
   
       --ms               Display only matched status code (default: 200, 204, 301, 302, 307, 401, 403, 500)
       --ml               Display only matched content-length
+      --mw               Display only matched the number of words
       --hs               Hide matched status code
       --hl               Hide matched content-length
+      --hw               Hide matched the number of words
   
       --no-color         Disable colorize the output (default: false)
       -v, --verbose      Verbose mode (default: false)
 
+Deep Options:
+  -s, --scan             Scan sensitive information, vulnerabilities.
+
 META OPTIONS:
-   -h, --help            Print the usage of Fuzzagotchi
-   version               Print the version of Fuzzagotchi
+  -h, --help             Print the usage of Fuzzagotchi
+  version                Print the version of Fuzzagotchi
 
 BUILTIN WORDLISTS:
   ALPHA_A_Z              Alphabets from a to z (contains both lowercase and uppercase)
@@ -60,6 +66,7 @@ EXAMPLES:
   fuzzagotchi -u https://example.com -w wordlist.txt
   fuzzagotchi -u https://example.com/EGG -w wordlist.txt
   fuzzagotchi -u https://example.com/?id=EGG -w NUM_0_999
+  fuzzagotchi -u https://example.com -w wordlist.txt --scan
 `
 
 type CmdOptions struct {
@@ -81,8 +88,14 @@ type CmdOptions struct {
 
 	MatchStatus []int
 	MatchLength string
+	MatchWords  string
 	HideStatus  []int
 	HideLength  string
+	HideWords   string
+
+	Proxy string
+
+	Scan bool
 
 	NoColor bool
 	Verbose bool
@@ -115,8 +128,14 @@ func init() {
 
 	rootCmd.Flags().IntSliceVarP(&Options.MatchStatus, "ms", "", []int{200, 204, 301, 302, 307, 401, 403, 500}, "")
 	rootCmd.Flags().StringVarP(&Options.MatchLength, "ml", "", "", "")
+	rootCmd.Flags().StringVarP(&Options.MatchWords, "mw", "", "", "")
 	rootCmd.Flags().IntSliceVarP(&Options.HideStatus, "hs", "", []int{}, "")
 	rootCmd.Flags().StringVarP(&Options.HideLength, "hl", "", "", "")
+	rootCmd.Flags().StringVarP(&Options.HideWords, "hw", "", "", "")
+
+	rootCmd.Flags().StringVarP(&Options.Proxy, "proxy", "x", "", "")
+
+	rootCmd.Flags().BoolVarP(&Options.Scan, "scan", "s", false, "")
 
 	rootCmd.Flags().BoolVarP(&Options.NoColor, "no-color", "", false, "")
 	rootCmd.Flags().BoolVarP(&Options.Verbose, "verbose", "v", false, "")

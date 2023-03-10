@@ -3,13 +3,16 @@ package fuzzer
 import (
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
 type Response struct {
 	Body          []byte            `json:"body"`
 	Config        Config            `json:"config"`
+	Content       string            `jsong:"content"`
 	ContentLength int               `json:"content_length"`
+	ContentWords  int               `jsong:"content_words"`
 	Delay         time.Duration     `json:"delay"`
 	Headers       map[string]string `json:"headers"`
 	Path          string            `json:"path"`
@@ -23,7 +26,9 @@ func NewResponse(resp *http.Response, req *Request, word string, reqPath string,
 	var newResp Response
 	newResp.Body = make([]byte, 0)
 	newResp.Config = req.Config
+	newResp.Content = ""
 	newResp.ContentLength = int(resp.ContentLength)
+	newResp.ContentWords = 0
 	newResp.Delay = req.Delay
 	newResp.Headers = make(map[string]string)
 	newResp.Path = reqPath
@@ -48,6 +53,9 @@ func NewResponse(resp *http.Response, req *Request, word string, reqPath string,
 		newResp.Body = make([]byte, 0)
 	} else {
 		newResp.Body = body
+		newResp.Content = string(body[:])
+		words := strings.Split(newResp.Content, " ")
+		newResp.ContentWords = len(words)
 	}
 
 	// Update content length

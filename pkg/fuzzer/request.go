@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -27,6 +28,16 @@ type Request struct {
 
 // Initialize Request
 func NewRequest(conf Config) Request {
+	proxyURL := http.ProxyFromEnvironment
+	customProxy := ""
+	if conf.Proxy != "" {
+		customProxy = conf.Proxy
+		p, err := url.Parse(customProxy)
+		if err == nil {
+			proxyURL = http.ProxyURL(p)
+		}
+	}
+
 	var req Request
 	req.Config = conf
 	req.Cookies = make(map[string]string)
@@ -88,8 +99,8 @@ func NewRequest(conf Config) Request {
 		CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
 		Timeout:       time.Duration(time.Duration(req.Config.Timeout) * time.Second),
 		Transport: &http.Transport{
-			ForceAttemptHTTP2: true,
-			// Proxy: nil,
+			ForceAttemptHTTP2:   true,
+			Proxy:               proxyURL,
 			MaxConnsPerHost:     500,
 			MaxIdleConns:        1000,
 			MaxIdleConnsPerHost: 500,
