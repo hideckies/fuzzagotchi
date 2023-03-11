@@ -22,10 +22,13 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
 
+	var f fuzzer.Fuzzer
+
 	go func() {
 		select {
 		case <-sigCh:
-			fmt.Println("Keyboard interrupt detected, terminating.")
+			fmt.Println("\x1b[2KKeyboard interrupt detected, terminating.")
+			f.Scan()
 			cancel()
 			os.Exit(0)
 		case <-ctx.Done():
@@ -67,8 +70,8 @@ func main() {
 	}
 
 	// Create a new Fuzzer and start fuzzing
-	fuzzer := fuzzer.NewFuzzer(ctx, cmd.Options, fuzztype, wordlistType, totalWords)
-	if err := fuzzer.Run(); err != nil {
+	f = fuzzer.NewFuzzer(ctx, cmd.Options, fuzztype, wordlistType, totalWords)
+	if err := f.Run(); err != nil {
 		fmt.Printf("%v", err)
 	}
 }

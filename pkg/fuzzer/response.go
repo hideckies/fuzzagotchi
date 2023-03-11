@@ -8,18 +8,18 @@ import (
 )
 
 type Response struct {
-	Body          []byte            `json:"body"`
-	Config        Config            `json:"config"`
-	Content       string            `jsong:"content"`
-	ContentLength int               `json:"content_length"`
-	ContentWords  int               `jsong:"content_words"`
-	Delay         time.Duration     `json:"delay"`
-	Headers       map[string]string `json:"headers"`
-	Path          string            `json:"path"`
-	RedirectPath  string            `json:"redirect_path"`
-	Status        string            `json:"status"`
-	StatusCode    int               `json:"status_code"`
-	Word          string            `json:"word"`
+	Body          []byte        `json:"body"`
+	Config        Config        `json:"config"`
+	Content       string        `jsong:"content"`
+	ContentLength int           `json:"content_length"`
+	ContentWords  int           `jsong:"content_words"`
+	Delay         time.Duration `json:"delay"`
+	Header        http.Header   `json:"header"`
+	Path          string        `json:"path"`
+	RedirectPath  string        `json:"redirect_path"`
+	Status        string        `json:"status"`
+	StatusCode    int           `json:"status_code"`
+	Word          string        `json:"word"`
 }
 
 func NewResponse(resp *http.Response, req *Request, word string, reqPath string, redirectResp *http.Response) Response {
@@ -30,7 +30,7 @@ func NewResponse(resp *http.Response, req *Request, word string, reqPath string,
 	newResp.ContentLength = int(resp.ContentLength)
 	newResp.ContentWords = 0
 	newResp.Delay = req.Delay
-	newResp.Headers = make(map[string]string)
+	newResp.Header = resp.Header
 	newResp.Path = reqPath
 	newResp.RedirectPath = ""
 	newResp.Status = resp.Status
@@ -42,6 +42,7 @@ func NewResponse(resp *http.Response, req *Request, word string, reqPath string,
 	if redirectResp != nil {
 		newResp.RedirectPath = redirectResp.Request.URL.Path
 		if req.Config.FollowRedirect {
+			newResp.Header = redirectResp.Header
 			newResp.Status = redirectResp.Status
 			newResp.StatusCode = redirectResp.StatusCode
 			reader = redirectResp.Body
