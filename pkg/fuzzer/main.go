@@ -115,9 +115,11 @@ func (f *Fuzzer) Run() error {
 	runtime.GOMAXPROCS(f.Config.Threads)
 	var wg sync.WaitGroup
 
-	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...", f.Errors)
+	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...")
 
 	wordCh := make(chan string, f.Config.Threads)
+
+	output.Head("DIRECTORIES FOUND")
 
 	// Wordlist from a file
 	if f.Config.WordlistType == "" {
@@ -138,7 +140,7 @@ func (f *Fuzzer) Run() error {
 
 		for scanner.Scan() {
 			bar.Add(1)
-			bar.Describe(fmt.Sprintf("Errors %d\r", f.Errors))
+			bar.Describe(fmt.Sprintf("| Errors %d\r", f.Errors))
 
 			word := scanner.Text()
 			wordCh <- word
@@ -198,7 +200,7 @@ func (f *Fuzzer) Run() error {
 
 		for _, w := range wordArr {
 			bar.Add(1)
-			bar.Describe(fmt.Sprintf("Errors %d\r", f.Errors))
+			bar.Describe(fmt.Sprintf("| Errors %d\r", f.Errors))
 			wordCh <- w
 		}
 	}

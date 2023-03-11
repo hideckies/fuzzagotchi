@@ -9,7 +9,7 @@ import (
 
 type ProgressBar *progressbar.ProgressBar
 
-func NewProgressBar(max int, desc string, errors int) ProgressBar {
+func NewProgressBar(max int, desc string) ProgressBar {
 	return progressbar.NewOptions(max,
 		progressbar.OptionUseANSICodes(true),
 		// progressbar.OptionSetWriter(os.Stdout),
@@ -19,7 +19,7 @@ func NewProgressBar(max int, desc string, errors int) ProgressBar {
 		progressbar.OptionThrottle(1*time.Millisecond),
 		progressbar.OptionSetWidth(10),
 		progressbar.OptionShowDescriptionAtLineEnd(),
-		progressbar.OptionSetDescription(fmt.Sprintf("%s | Errors %d\r", desc, errors)),
+		progressbar.OptionSetDescription(fmt.Sprintf("%s\r", desc)),
 		progressbar.OptionSetTheme(progressbar.Theme{
 			Saucer:        "[yellow]+[reset]",
 			SaucerHead:    "[yellow]+[reset]",
