@@ -193,6 +193,9 @@ func (f *Fuzzer) Run() error {
 			}
 		}
 
+		// Reasign progressbar
+		bar = *output.NewProgressBar(len(wordArr), "Fuzzing...")
+
 		for i := 0; i < f.Config.Threads; i++ {
 			wg.Add(1)
 			go f.worker(&wg, i, wordCh, bar)
