@@ -7,7 +7,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/hideckies/fuzzagotchi/cmd"
-	"github.com/hideckies/fuzzagotchi/pkg/util"
 )
 
 const (
@@ -41,12 +40,12 @@ func Banner(options cmd.CmdOptions) {
 	}
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Threads"), color.CyanString("%d", options.Threads))
 	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Delay"), color.CyanString(options.Delay))
-	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Match Status"), color.CyanString("%s", util.IntJoin(options.MatchStatus, ",")))
+	fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Match Status"), color.CyanString("%s", options.MatchStatus))
 	if options.MatchLength != "" {
 		fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Match Length"), color.CyanString(options.MatchLength))
 	}
 	if len(options.HideStatus) > 0 {
-		fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Hide Status"), color.CyanString("%s", util.IntJoin(options.HideStatus, ",")))
+		fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Hide Status"), color.CyanString("%s", options.HideStatus))
 	}
 	if options.HideLength != "" {
 		fmt.Fprintf(w, "%s %s\t:\t%s\n", plusMark, color.YellowString("Hide Length"), color.CyanString(options.HideLength))

@@ -29,11 +29,11 @@ type Config struct {
 	EGG            bool            `json:"egg"`
 	Header         string          `json:"header"`
 	HideLength     string          `json:"hide_length"`
-	HideStatus     []int           `json:"hide_status"`
+	HideStatus     string          `json:"hide_status"`
 	HideWords      string          `jsong:"hide_words"`
 	Host           string          `json:"host"`
 	MatchLength    string          `json:"match_length"`
-	MatchStatus    []int           `json:"match_status"`
+	MatchStatus    string          `json:"match_status"`
 	MatchWords     string          `json:"match_words"`
 	Method         string          `json:"method"`
 	PostData       string          `json:"post_data"`
@@ -53,6 +53,7 @@ type Fuzzer struct {
 	Config    Config     `json:"config"`
 	Request   Request    `json:"request"`
 	Responses []Response `json:"response"`
+	Vulns     []string   `jsong:vulns`
 
 	TotalWords int `json:"total_words"`
 	Errors     int `json:"errors"`
@@ -61,8 +62,9 @@ type Fuzzer struct {
 }
 
 // Initialize a new Fuzzer
-func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, wordlistType string, totalWords int) Fuzzer {
+func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, wordlistType string, totalWords int) (Fuzzer, error) {
 	var f Fuzzer
+	var err error
 
 	egg := false
 	if strings.Contains(options.URL, "EGG") {
@@ -103,11 +105,15 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, wor
 		f.Config.URL = util.AdjustUrlSuffix(f.Config.URL) + "EGG"
 	}
 
-	f.Request = NewRequest(f.Config)
+	f.Request, err = NewRequest(f.Config)
+	if err != nil {
+		return Fuzzer{}, err
+	}
 	f.Responses = make([]Response, 0)
+	f.Vulns = make([]string, 0)
 	f.TotalWords = totalWords
 	f.Errors = 0
-	return f
+	return f, nil
 }
 
 // Run to fuzz
@@ -118,8 +124,6 @@ func (f *Fuzzer) Run() error {
 	bar := *output.NewProgressBar(f.TotalWords, "Fuzzing...")
 
 	wordCh := make(chan string, f.Config.Threads)
-
-	output.Head("DIRECTORIES FOUND")
 
 	// Wordlist from a file
 	if f.Config.WordlistType == "" {
@@ -266,7 +270,7 @@ func (f *Fuzzer) process(word string, n int) (Response, error) {
 
 // Check if the response matches rules
 func (f *Fuzzer) matcher(resp Response) bool {
-	if util.ContainInt(f.Config.MatchStatus, resp.StatusCode) && !util.ContainInt(f.Config.HideStatus, resp.StatusCode) && f.matchContentLength(resp.ContentLength) && f.matchContentWords(resp.ContentWords) {
+	if f.matchStatusCode(resp.StatusCode) && f.matchContentLength(resp.ContentLength) && f.matchContentWords(resp.ContentWords) {
 		return true
 	}
 	return false

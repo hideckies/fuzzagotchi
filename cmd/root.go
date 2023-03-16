@@ -86,10 +86,10 @@ type CmdOptions struct {
 	Timeout        int
 	UserAgent      string
 
-	MatchStatus []int
+	MatchStatus string
 	MatchLength string
 	MatchWords  string
-	HideStatus  []int
+	HideStatus  string
 	HideLength  string
 	HideWords   string
 
@@ -126,10 +126,10 @@ func init() {
 	rootCmd.Flags().IntVarP(&Options.Timeout, "timeout", "", 10, "")
 	rootCmd.Flags().StringVarP(&Options.UserAgent, "user-agent", "", "Fuzzagotchi", "")
 
-	rootCmd.Flags().IntSliceVarP(&Options.MatchStatus, "ms", "", []int{200, 204, 301, 302, 307, 401, 403, 500}, "")
+	rootCmd.Flags().StringVarP(&Options.MatchStatus, "ms", "", "200,204,301,302,307,401,403,500", "")
 	rootCmd.Flags().StringVarP(&Options.MatchLength, "ml", "", "", "")
 	rootCmd.Flags().StringVarP(&Options.MatchWords, "mw", "", "", "")
-	rootCmd.Flags().IntSliceVarP(&Options.HideStatus, "hs", "", []int{}, "")
+	rootCmd.Flags().StringVarP(&Options.HideStatus, "hs", "", "", "")
 	rootCmd.Flags().StringVarP(&Options.HideLength, "hl", "", "", "")
 	rootCmd.Flags().StringVarP(&Options.HideWords, "hw", "", "", "")
 
