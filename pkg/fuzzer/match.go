@@ -8,6 +8,11 @@ import (
 	"github.com/hideckies/fuzzagotchi/pkg/util"
 )
 
+// Check if the result's status code matches the option's status code
+func (f *Fuzzer) matchStatusCode(sc int) bool {
+	return checkMatched(sc, f.Config.MatchStatus, f.Config.MatchStatus)
+}
+
 // Check if the result's Content-Length mathces the option's Content-Length
 func (f *Fuzzer) matchContentLength(cl int) bool {
 	return checkMatched(cl, f.Config.MatchLength, f.Config.HideLength)

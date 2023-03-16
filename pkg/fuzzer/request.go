@@ -3,6 +3,7 @@ package fuzzer
 import (
 	"bytes"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -27,7 +28,7 @@ type Request struct {
 }
 
 // Initialize Request
-func NewRequest(conf Config) Request {
+func NewRequest(conf Config) (Request, error) {
 	proxyURL := http.ProxyFromEnvironment
 	customProxy := ""
 	if conf.Proxy != "" {
@@ -68,9 +69,13 @@ func NewRequest(conf Config) Request {
 			headers := strings.Split(conf.Header, ";")
 			for _, v := range headers {
 				header := strings.Split(strings.TrimSpace(v), ":")
-				key := header[0]
-				val := header[1]
-				req.Headers[key] = val
+				if len(header) == 2 {
+					key := header[0]
+					val := header[1]
+					req.Headers[key] = val
+				} else {
+					return Request{}, fmt.Errorf("header given must be separate by colon")
+				}
 			}
 		}
 	}
@@ -117,11 +122,11 @@ func NewRequest(conf Config) Request {
 		},
 	}
 
-	// if req.Config.FollowRedirect {
-	// 	req.Client.CheckRedirect = nil
-	// }
+	if req.Config.FollowRedirect {
+		req.Client.CheckRedirect = nil
+	}
 
-	return req
+	return req, nil
 }
 
 // Sent request

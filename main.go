@@ -23,6 +23,7 @@ func main() {
 	signal.Notify(sigCh, os.Interrupt)
 
 	var f fuzzer.Fuzzer
+	var err error
 
 	go func() {
 		select {
@@ -70,8 +71,12 @@ func main() {
 	}
 
 	// Create a new Fuzzer and start fuzzing
-	f = fuzzer.NewFuzzer(ctx, cmd.Options, fuzztype, wordlistType, totalWords)
-	if err := f.Run(); err != nil {
+	f, err = fuzzer.NewFuzzer(ctx, cmd.Options, fuzztype, wordlistType, totalWords)
+	if err != nil {
+		color.Red("%s", err)
+		return
+	}
+	if err = f.Run(); err != nil {
 		fmt.Printf("%v", err)
 	}
 }
