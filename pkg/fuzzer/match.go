@@ -10,7 +10,11 @@ import (
 
 // Check if the result's status code matches the option's status code
 func (f *Fuzzer) matchStatusCode(sc int) bool {
-	return checkMatched(sc, f.Config.MatchStatus, f.Config.MatchStatus)
+	// adjust match&hide status code
+	if f.Config.HideStatus != "" {
+		f.Config.MatchStatus = ""
+	}
+	return checkMatched(sc, f.Config.MatchStatus, f.Config.HideStatus)
 }
 
 // Check if the result's Content-Length mathces the option's Content-Length
@@ -123,5 +127,29 @@ func checkMatched(num int, mflag string, hflag string) bool {
 		}
 	}
 
+	return match
+}
+
+// Check if the results's content contains given keyword
+func (f *Fuzzer) matchKeyword(content string) bool {
+	match := true
+
+	if f.Config.MatchKeyword == "" && f.Config.HideKeyword == "" {
+		return true
+	}
+	if f.Config.MatchKeyword != "" {
+		if strings.Contains(content, f.Config.MatchKeyword) {
+			return true
+		} else {
+			return false
+		}
+	}
+	if f.Config.HideKeyword != "" {
+		if strings.Contains(content, f.Config.HideKeyword) {
+			return false
+		} else {
+			return true
+		}
+	}
 	return match
 }

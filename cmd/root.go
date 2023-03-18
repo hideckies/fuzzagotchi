@@ -44,9 +44,11 @@ FUZZER OPTIONS:
       --ms               Display only matched status code (default: 200, 204, 301, 302, 307, 401, 403, 500)
       --ml               Display only matched content-length
       --mw               Display only matched the number of words
+	  --mk               Display only the response content contains specific keyword
       --hs               Hide matched status code
       --hl               Hide matched content-length
       --hw               Hide matched the number of words
+	  --hk               Hide if the response content contains specific keyword
   
       --no-color         Disable colorize the output (default: false)
       -v, --verbose      Verbose mode (default: false)
@@ -86,12 +88,14 @@ type CmdOptions struct {
 	Timeout        int
 	UserAgent      string
 
-	MatchStatus string
-	MatchLength string
-	MatchWords  string
-	HideStatus  string
-	HideLength  string
-	HideWords   string
+	MatchStatus  string
+	MatchLength  string
+	MatchWords   string
+	MatchKeyword string
+	HideStatus   string
+	HideLength   string
+	HideWords    string
+	HideKeyword  string
 
 	Proxy string
 
@@ -129,9 +133,11 @@ func init() {
 	rootCmd.Flags().StringVarP(&Options.MatchStatus, "ms", "", "200,204,301,302,307,401,403,500", "")
 	rootCmd.Flags().StringVarP(&Options.MatchLength, "ml", "", "", "")
 	rootCmd.Flags().StringVarP(&Options.MatchWords, "mw", "", "", "")
+	rootCmd.Flags().StringVarP(&Options.MatchKeyword, "mk", "", "", "")
 	rootCmd.Flags().StringVarP(&Options.HideStatus, "hs", "", "", "")
 	rootCmd.Flags().StringVarP(&Options.HideLength, "hl", "", "", "")
 	rootCmd.Flags().StringVarP(&Options.HideWords, "hw", "", "", "")
+	rootCmd.Flags().StringVarP(&Options.HideKeyword, "hk", "", "", "")
 
 	rootCmd.Flags().StringVarP(&Options.Proxy, "proxy", "x", "", "")
 

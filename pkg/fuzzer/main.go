@@ -28,10 +28,12 @@ type Config struct {
 	FuzzType       string          `json:"fuzztype"`
 	EGG            bool            `json:"egg"`
 	Header         string          `json:"header"`
+	HideKeyword    string          `json:"hide_keyword"`
 	HideLength     string          `json:"hide_length"`
 	HideStatus     string          `json:"hide_status"`
 	HideWords      string          `jsong:"hide_words"`
 	Host           string          `json:"host"`
+	MatchKeyword   string          `json:"match_keyword"`
 	MatchLength    string          `json:"match_length"`
 	MatchStatus    string          `json:"match_status"`
 	MatchWords     string          `json:"match_words"`
@@ -53,7 +55,7 @@ type Fuzzer struct {
 	Config    Config     `json:"config"`
 	Request   Request    `json:"request"`
 	Responses []Response `json:"response"`
-	Vulns     []string   `jsong:vulns`
+	Vulns     []string   `jsong:"vulns"`
 
 	TotalWords int `json:"total_words"`
 	Errors     int `json:"errors"`
@@ -79,10 +81,12 @@ func NewFuzzer(ctx context.Context, options cmd.CmdOptions, fuzztype string, wor
 		FuzzType:       fuzztype,
 		FollowRedirect: options.FollowRedirect,
 		Header:         options.Header,
+		HideKeyword:    options.HideKeyword,
 		HideLength:     options.HideLength,
 		HideStatus:     options.HideStatus,
 		HideWords:      options.HideWords,
 		Host:           extractHost(options.URL),
+		MatchKeyword:   options.MatchKeyword,
 		MatchLength:    options.MatchLength,
 		MatchStatus:    options.MatchStatus,
 		MatchWords:     options.MatchWords,
@@ -270,7 +274,8 @@ func (f *Fuzzer) process(word string, n int) (Response, error) {
 
 // Check if the response matches rules
 func (f *Fuzzer) matcher(resp Response) bool {
-	if f.matchStatusCode(resp.StatusCode) && f.matchContentLength(resp.ContentLength) && f.matchContentWords(resp.ContentWords) {
+	if f.matchStatusCode(resp.StatusCode) && f.matchContentLength(resp.ContentLength) &&
+		f.matchContentWords(resp.ContentWords) && f.matchKeyword(resp.Content) {
 		return true
 	}
 	return false
