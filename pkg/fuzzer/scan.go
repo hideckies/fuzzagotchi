@@ -16,7 +16,8 @@ func (f *Fuzzer) Scan() error {
 		return nil
 	}
 
-	reKwHeader := regexp.MustCompile(`(?i)apache|gunicorn|nginx|php|python|tomcat|werkzeug|\d+\.\d+\.\d+`)
+	reKwHeader := regexp.MustCompile(`
+		(?i)apache|gunicorn|nginx|php|python|tomcat|werkzeug|wsgiserver|\d+\.\d+\.\d+`)
 	reKwContent := regexp.MustCompile(`
 		(?i)admin|author|backup|cms|config|cred|login|ng-apps|pass|root|secret|sql|token|user|version|wordpress|\d+\.\d+(\.\d+)*`)
 
